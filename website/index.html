@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MLB Shortstop Replacement Analysis</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, Arial, Helvetica, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(59,130,246,0.06), transparent 28%),
+        radial-gradient(circle at bottom right, rgba(16,185,129,0.05), transparent 30%),
+        #f8fafc;
+      color: #0f172a;
+    }
+    .container { max-width: 1480px; margin: 0 auto; padding: 24px 20px 48px; }
+    .hero {
+      background: linear-gradient(135deg, #0b1730 0%, #13284d 55%, #20324b 100%);
+      color: white;
+      border-radius: 30px;
+      padding: 34px 38px;
+      box-shadow: 0 20px 46px rgba(15, 23, 42, 0.18);
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      background: rgba(255,255,255,0.12);
+    }
+    h1 {
+      margin: 16px 0 10px;
+      font-size: 42px;
+      line-height: 1.06;
+      letter-spacing: -0.03em;
+    }
+    .hero p {
+      max-width: 980px;
+      margin: 0;
+      color: #dbeafe;
+      font-size: 15px;
+      line-height: 1.75;
+    }
+    .main {
+      margin-top: 22px;
+      display: grid;
+      grid-template-columns: 0.78fr 1.42fr;
+      gap: 20px;
+      align-items: start;
+    }
+    .stack { display: grid; gap: 20px; }
+    .card {
+      background: rgba(255,255,255,0.94);
+      border: 1px solid #e2e8f0;
+      border-radius: 24px;
+      padding: 20px;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+    }
+    .section-header {
+      padding-bottom: 14px;
+      margin-bottom: 14px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .section-header h2, .section-header h3 {
+      margin: 0 0 4px;
+      font-size: 22px;
+    }
+    .muted {
+      color: #64748b;
+      font-size: 13px;
+      line-height: 1.55;
+    }
+    .small {
+      color: #64748b;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+    .profile-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 12px;
+    }
+    .pill {
+      background: linear-gradient(90deg,#dbeafe,#dcfce7);
+      color: #0f172a;
+      border-radius: 16px;
+      padding: 10px 12px;
+      font-size: 13px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .mini-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .mini-box {
+      background: linear-gradient(180deg,#ffffff,#f8fafc);
+      border: 1px solid #e2e8f0;
+      border-radius: 18px;
+      padding: 14px;
+    }
+    .mini-label {
+      color: #64748b;
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .mini-value {
+      margin-top: 8px;
+      font-size: 24px;
+      font-weight: 800;
+    }
+    .risk-grid { display: grid; gap: 14px; margin-top: 16px; }
+    .risk-header { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
+    .risk-header span:first-child { color: #475569; }
+    .bar { height: 11px; background: #e2e8f0; border-radius: 999px; overflow: hidden; }
+    .bar > div { height: 100%; border-radius: 999px; background: linear-gradient(90deg,#3b82f6,#10b981); }
+    .summary {
+      margin-top: 18px;
+      padding: 18px;
+      border-radius: 20px;
+      background: linear-gradient(135deg,#0f172a,#1e293b);
+      color: #f8fafc;
+      line-height: 1.75;
+      font-size: 14px;
+    }
+    .summary .label {
+      color: #c7d2fe;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+    .cluster-grid { display: grid; gap: 12px; margin-top: 12px; }
+    .cluster-card {
+      border: 1px solid #e2e8f0;
+      background: linear-gradient(180deg,#ffffff,#f8fafc);
+      border-radius: 18px;
+      padding: 14px;
+    }
+    .name { font-weight: 700; margin-bottom: 4px; }
+    .finder-header {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      padding-bottom: 14px;
+      margin-bottom: 14px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .finder-header h2 { margin: 0 0 4px; font-size: 22px; }
+    .controls {
+      display: grid;
+      grid-template-columns: 1.2fr 0.82fr 0.82fr 0.9fr 0.82fr 0.9fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    input, select {
+      width: 100%;
+      border: 1px solid #cbd5e1;
+      background: white;
+      border-radius: 16px;
+      padding: 12px 14px;
+      font-size: 14px;
+      outline: none;
+      transition: 0.2s ease;
+    }
+    input:focus, select:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 4px rgba(59,130,246,0.10);
+    }
+    .replacement-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 12px;
+      max-height: 1080px;
+      overflow-y: auto;
+      padding-right: 6px;
+    }
+    .replacement-list::-webkit-scrollbar { width: 10px; }
+    .replacement-list::-webkit-scrollbar-track { background: #eef2f7; border-radius: 999px; }
+    .replacement-list::-webkit-scrollbar-thumb { background: linear-gradient(180deg,#cbd5e1,#94a3b8); border-radius: 999px; }
+    .replacement-item {
+      border: 1px solid #e2e8f0;
+      background: linear-gradient(180deg,#ffffff,#f8fafc);
+      border-radius: 20px;
+      padding: 16px;
+    }
+    .replacement-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .replacement-score {
+      background: linear-gradient(90deg,#dbeafe,#dcfce7);
+      color: #0f172a;
+      border-radius: 999px;
+      padding: 7px 11px;
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .chip {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #e2e8f0;
+      color: #334155;
+      font-size: 12px;
+      margin-right: 6px;
+      margin-top: 6px;
+    }
+    .cluster-chip {
+      background: linear-gradient(90deg,#dbeafe,#dcfce7);
+      color: #0f172a;
+      font-weight: 700;
+    }
+    @media (max-width: 1280px) {
+      .main { grid-template-columns: 1fr; }
+      .controls { grid-template-columns: 1fr 1fr 1fr; }
+      .mini-grid { grid-template-columns: 1fr 1fr; }
+      h1 { font-size: 34px; }
+    }
+    @media (max-width: 760px) {
+      .controls, .mini-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <section class="hero">
+      <div class="badge">MLB Shortstop Replacement Analysis</div>
+      <h1>MLB Shortstop Analysis</h1>
+      <p>
+        This dashboard supports our project goal of identifying the most suitable shortstop replacement
+        when a player is unavailable. Using 2025 player performance, risk indicators, clustering-based
+        archetypes, and a pairwise recommendation table, the page helps compare candidates by age,
+        contract level, injury history, cluster profile, and on-field value to find practical replacement options.
+      </p>
+    </section>
+
+    <section class="main">
+      <div class="stack">
+        <div class="card">
+          <div class="section-header">
+            <h3>Selected Player Profile</h3>
+            <div class="muted">Main decision card for the currently selected player.</div>
+          </div>
+
+          <div class="profile-top">
+            <div>
+              <div class="muted">Selected player profile</div>
+              <h2 id="playerName" style="margin:6px 0 4px;font-size:28px;">-</h2>
+              <div class="muted" id="playerMeta">-</div>
+            </div>
+            <div class="pill" id="clusterPill">-</div>
+          </div>
+
+          <div class="mini-grid">
+            <div class="mini-box"><div class="mini-label">WAR</div><div class="mini-value" id="playerWAR">-</div></div>
+            <div class="mini-box"><div class="mini-label">Age</div><div class="mini-value" id="playerAge">-</div></div>
+            <div class="mini-box"><div class="mini-label">Injuries</div><div class="mini-value" id="playerInjuries">-</div></div>
+            <div class="mini-box"><div class="mini-label">AAV</div><div class="mini-value" id="playerAAV">-</div></div>
+          </div>
+
+          <div class="risk-grid">
+            <div><div class="risk-header"><span>Injury Risk</span><span id="injuryRiskText">0%</span></div><div class="bar"><div id="injuryRiskBar" style="width:0%"></div></div></div>
+            <div><div class="risk-header"><span>Contract Risk</span><span id="contractRiskText">0%</span></div><div class="bar"><div id="contractRiskBar" style="width:0%"></div></div></div>
+            <div><div class="risk-header"><span>Total Risk</span><span id="totalRiskText">0%</span></div><div class="bar"><div id="totalRiskBar" style="width:0%"></div></div></div>
+          </div>
+
+          <div class="summary">
+            <div class="label">Analyst Summary</div>
+            <div id="summaryText">-</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="section-header">
+            <h3>Cluster Label Notes</h3>
+            <div class="muted">Short descriptions for the renamed cluster labels.</div>
+          </div>
+          <div class="cluster-grid" id="clusterNotes"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="finder-header">
+          <div>
+            <h2>Best Replacement Finder</h2>
+            <div class="muted">Use the filters to narrow the full candidate pool, then review the ranked replacement list.</div>
+          </div>
+        </div>
+
+        <div class="controls">
+          <select id="injuredPlayerSelect"></select>
+          <select id="ageFilter"></select>
+          <select id="warFilter"></select>
+          <select id="clusterFilter"></select>
+          <select id="injuryFilter"></select>
+          <select id="riskFilter"></select>
+        </div>
+
+        <div class="small">The recommendation list below remains scrollable and shows the full ranked pool after filtering.</div>
+
+        <div class="replacement-list" id="replacementList"></div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const players = [{"name": "Bobby Witt Jr.", "nameKey": "bobby witt jr.", "age": 25, "war": 8.0, "profile": "Star-level shortstop", "contractAAV": 26252525, "injuries": 0, "injuryRiskPct": 3, "contractRiskPct": 81, "totalRiskPct": 29, "clusterLabel": 4, "clusterName": "Elite"}, {"name": "Geraldo Perdomo", "nameKey": "geraldo perdomo", "age": 25, "war": 7.1, "profile": "Star-level shortstop", "contractAAV": 2550000, "injuries": 1, "injuryRiskPct": 32, "contractRiskPct": 36, "totalRiskPct": 27, "clusterLabel": 3, "clusterName": "Contact"}, {"name": "Trea Turner", "nameKey": "trea turner", "age": 32, "war": 6.7, "profile": "Star-level shortstop", "contractAAV": 27272727, "injuries": 3, "injuryRiskPct": 66, "contractRiskPct": 82, "totalRiskPct": 65, "clusterLabel": 2, "clusterName": "Speed / Base Running"}, {"name": "Francisco Lindor", "nameKey": "francisco lindor", "age": 31, "war": 6.3, "profile": "Star-level shortstop", "contractAAV": 31900000, "injuries": 1, "injuryRiskPct": 29, "contractRiskPct": 83, "totalRiskPct": 50, "clusterLabel": 2, "clusterName": "Speed / Base Running"}, {"name": "Jeremy Peña", "nameKey": "jeremy peña", "age": 27, "war": 5.7, "profile": "Star-level shortstop", "contractAAV": 4100000, "injuries": 0, "injuryRiskPct": 3, "contractRiskPct": 44, "totalRiskPct": 22, "clusterLabel": 2, "clusterName": "Speed / Base Running"}, {"name": "Gunnar Henderson", "nameKey": "gunnar henderson", "age": 24, "war": 4.8, "profile": "Strong everyday shortstop", "contractAAV": 782300, "injuries": 1, "injuryRiskPct": 57, "contractRiskPct": 24, "totalRiskPct": 33, "clusterLabel": 4, "clusterName": "Elite"}, {"name": "Elly De La Cruz", "nameKey": "elly de la cruz", "age": 23, "war": 4.3, "profile": "Strong everyday shortstop", "contractAAV": 770000, "injuries": 0, "injuryRiskPct": 3, "contractRiskPct": 25, "totalRiskPct": 12, "clusterLabel": 4, "clusterName": "Elite"}, {"name": "Willy Adames", "nameKey": "willy adames", "age": 29, "war": 4.1, "profile": "Strong everyday shortstop", "contractAAV": 26000000, "injuries": 3, "injuryRiskPct": 35, "contractRiskPct": 85, "totalRiskPct": 47, "clusterLabel": 0, "clusterName": "Balanced"}, {"name": "Corey Seager", "nameKey": "corey seager", "age": 31, "war": 4.0, "profile": "Strong everyday shortstop", "contractAAV": 32500000, "injuries": 7, "injuryRiskPct": 81, "contractRiskPct": 88, "totalRiskPct": 72, "clusterLabel": 0, "clusterName": "Balanced"}, {"name": "Bo Bichette", "nameKey": "bo bichette", "age": 27, "war": 3.8, "profile": "Strong everyday shortstop", "contractAAV": 11200000, "injuries": 7, "injuryRiskPct": 73, "contractRiskPct": 62, "totalRiskPct": 55, "clusterLabel": 1, "clusterName": "Power / Defense"}, {"name": "Masyn Winn", "nameKey": "masyn winn", "age": 23, "war": 3.5, "profile": "Strong everyday shortstop", "contractAAV": 770890, "injuries": 2, "injuryRiskPct": 57, "contractRiskPct": 29, "totalRiskPct": 34, "clusterLabel": 1, "clusterName": "Power / Defense"}, {"name": "Jacob Wilson", "nameKey": "jacob wilson", "age": 23, "war": 3.4, "profile": "Strong everyday shortstop", "contractAAV": 760000, "injuries": 2, "injuryRiskPct": 62, "contractRiskPct": 29, "totalRiskPct": 37, "clusterLabel": 3, "clusterName": "Contact"}, {"name": "Mookie Betts", "nameKey": "mookie betts", "age": 32, "war": 3.4, "profile": "Strong everyday shortstop", "contractAAV": 25554824, "injuries": 0, "injuryRiskPct": 3, "contractRiskPct": 87, "totalRiskPct": 41, "clusterLabel": 3, "clusterName": "Contact"}, {"name": "Dansby Swanson", "nameKey": "dansby swanson", "age": 31, "war": 3.3, "profile": "Strong everyday shortstop", "contractAAV": 25285714, "injuries": 2, "injuryRiskPct": 30, "contractRiskPct": 87, "totalRiskPct": 51, "clusterLabel": 2, "clusterName": "Speed / Base Running"}, {"name": "Xander Bogaerts", "nameKey": "xander bogaerts", "age": 32, "war": 3.2, "profile": "Strong everyday shortstop", "contractAAV": 25454545, "injuries": 2, "injuryRiskPct": 58, "contractRiskPct": 91, "totalRiskPct": 64, "clusterLabel": 1, "clusterName": "Power / Defense"}, {"name": "CJ Abrams", "nameKey": "cj abrams", "age": 24, "war": 3.1, "profile": "Strong everyday shortstop", "contractAAV": 780600, "injuries": 1, "injuryRiskPct": 45, "contractRiskPct": 31, "totalRiskPct": 30, "clusterLabel": 2, "clusterName": "Speed / Base Running"}, {"name": "Zach Neto", "nameKey": "zach neto", "age": 24, "war": 3.1, "profile": "Strong everyday shortstop", "contractAAV": 780000, "injuries": 4, "injuryRiskPct": 71, "contractRiskPct": 31, "totalRiskPct": 41, "clusterLabel": 4, "clusterName": "Elite"}, {"name": "Trevor Story", "nameKey": "trevor story", "age": 32, "war": 3.0, "profile": "Strong everyday shortstop", "contractAAV": 23333333, "injuries": 3, "injuryRiskPct": 46, "contractRiskPct": 85, "totalRiskPct": 58, "clusterLabel": 2, "clusterName": "Speed / Base Running"}, {"name": "J.P. Crawford", "nameKey": "j.p. crawford", "age": 30, "war": 2.8, "profile": "Solid regular option", "contractAAV": 10200000, "injuries": 3, "injuryRiskPct": 37, "contractRiskPct": 74, "totalRiskPct": 51, "clusterLabel": 1, "clusterName": "Power / Defense"}, {"name": "Colson Montgomery", "nameKey": "colson montgomery", "age": 23, "war": 2.7, "profile": "Solid regular option", "contractAAV": 760000, "injuries": 0, "injuryRiskPct": 3, "contractRiskPct": 33, "totalRiskPct": 14, "clusterLabel": 0, "clusterName": "Balanced"}, {"name": "Carlos Correa", "nameKey": "carlos correa", "age": 30, "war": 2.6, "profile": "Solid regular option", "contractAAV": 33333333, "injuries": 7, "injuryRiskPct": 69, "contractRiskPct": 93, "totalRiskPct": 69, "clusterLabel": 1, "clusterName": "Power / Defense"}, {"name": "Otto Lopez", "nameKey": "otto lopez", "age": 26, "war": 2.3, "profile": "Solid regular option", "contractAAV": 778500, "injuries": 2, "injuryRiskPct": 35, "contractRiskPct": 35, "totalRiskPct": 28, "clusterLabel": 1, "clusterName": "Power / Defense"}, {"name": "José Caballero", "nameKey": "josé caballero", "age": 28, "war": 2.1, "profile": "Solid regular option", "contractAAV": 776800, "injuries": 0, "injuryRiskPct": 3, "contractRiskPct": 36, "totalRiskPct": 20, "clusterLabel": 4, "clusterName": "Elite"}, {"name": "Josh Smith", "nameKey": "josh smith", "age": 27, "war": 1.8, "profile": "Solid regular option", "contractAAV": 780500, "injuries": 1, "injuryRiskPct": 25, "contractRiskPct": 38, "totalRiskPct": 29, "clusterLabel": 1, "clusterName": "Power / Defense"}, {"name": "Jared Triolo", "nameKey": "jared triolo", "age": 27, "war": 1.5, "profile": "Solid regular option", "contractAAV": 760000, "injuries": 1, "injuryRiskPct": 43, "contractRiskPct": 39, "totalRiskPct": 37, "clusterLabel": 2, "clusterName": "Speed / Base Running"}, {"name": "Javier Báez", "nameKey": "javier báez", "age": 32, "war": 1.4, "profile": "Depth / development option", "contractAAV": 23333333, "injuries": 0, "injuryRiskPct": 3, "contractRiskPct": 94, "totalRiskPct": 43, "clusterLabel": 0, "clusterName": "Balanced"}, {"name": "Joey Ortiz", "nameKey": "joey ortiz", "age": 26, "war": 1.4, "profile": "Depth / development option", "contractAAV": 776000, "injuries": 2, "injuryRiskPct": 50, "contractRiskPct": 40, "totalRiskPct": 35, "clusterLabel": 3, "clusterName": "Contact"}, {"name": "Chase Meidroth", "nameKey": "chase meidroth", "age": 23, "war": 1.3, "profile": "Depth / development option", "contractAAV": 760000, "injuries": 2, "injuryRiskPct": 56, "contractRiskPct": 41, "totalRiskPct": 37, "clusterLabel": 3, "clusterName": "Contact"}, {"name": "Gabriel Arias", "nameKey": "gabriel arias", "age": 25, "war": 1.1, "profile": "Depth / development option", "contractAAV": 770200, "injuries": 2, "injuryRiskPct": 65, "contractRiskPct": 41, "totalRiskPct": 41, "clusterLabel": 0, "clusterName": "Balanced"}, {"name": "Anthony Volpe", "nameKey": "anthony volpe", "age": 24, "war": 1.0, "profile": "Depth / development option", "contractAAV": 879000, "injuries": 0, "injuryRiskPct": 3, "contractRiskPct": 44, "totalRiskPct": 18, "clusterLabel": 2, "clusterName": "Speed / Base Running"}, {"name": "Isiah Kiner-Falefa", "nameKey": "isiah kiner-falefa", "age": 30, "war": 0.7, "profile": "Depth / development option", "contractAAV": 7500000, "injuries": 2, "injuryRiskPct": 54, "contractRiskPct": 72, "totalRiskPct": 57, "clusterLabel": 3, "clusterName": "Contact"}, {"name": "Nick Allen", "nameKey": "nick allen", "age": 26, "war": 0.7, "profile": "Depth / development option", "contractAAV": 780000, "injuries": 0, "injuryRiskPct": 3, "contractRiskPct": 43, "totalRiskPct": 17, "clusterLabel": 3, "clusterName": "Contact"}, {"name": "Brayan Rocchio", "nameKey": "brayan rocchio", "age": 24, "war": 0.4, "profile": "Depth / development option", "contractAAV": 771000, "injuries": 0, "injuryRiskPct": 3, "contractRiskPct": 45, "totalRiskPct": 18, "clusterLabel": 1, "clusterName": "Power / Defense"}, {"name": "Brooks Lee", "nameKey": "brooks lee", "age": 24, "war": 0.3, "profile": "Depth / development option", "contractAAV": 764500, "injuries": 2, "injuryRiskPct": 59, "contractRiskPct": 46, "totalRiskPct": 40, "clusterLabel": 1, "clusterName": "Power / Defense"}, {"name": "Taylor Walls", "nameKey": "taylor walls", "age": 28, "war": 0.3, "profile": "Depth / development option", "contractAAV": 1400000, "injuries": 4, "injuryRiskPct": 79, "contractRiskPct": 54, "totalRiskPct": 55, "clusterLabel": 1, "clusterName": "Power / Defense"}, {"name": "Ezequiel Tovar", "nameKey": "ezequiel tovar", "age": 23, "war": 0.2, "profile": "Depth / development option", "contractAAV": 9071429, "injuries": 2, "injuryRiskPct": 68, "contractRiskPct": 91, "totalRiskPct": 57, "clusterLabel": 0, "clusterName": "Balanced"}, {"name": "Trey Sweeney", "nameKey": "trey sweeney", "age": 25, "war": -0.9, "profile": "Depth / development option", "contractAAV": 764000, "injuries": 0, "injuryRiskPct": 3, "contractRiskPct": 49, "totalRiskPct": 19, "clusterLabel": 0, "clusterName": "Balanced"}];
+    const pairwise = {"elly de la cruz|||elly de la cruz": 0.0, "elly de la cruz|||gunnar henderson": 0.881172225, "elly de la cruz|||bobby witt jr.": 0.902828413, "elly de la cruz|||carlos correa": 0.440217728, "elly de la cruz|||javier báez": 0.533596592, "elly de la cruz|||willy adames": 0.501654179, "elly de la cruz|||trea turner": 0.500384108, "elly de la cruz|||ezequiel tovar": 0.553137142, "elly de la cruz|||j.p. crawford": 0.443512171, "elly de la cruz|||corey seager": 0.445037589, "elly de la cruz|||jeremy peña": 0.608621396, "elly de la cruz|||cj abrams": 0.638034093, "elly de la cruz|||dansby swanson": 0.525580826, "elly de la cruz|||francisco lindor": 0.769702693, "elly de la cruz|||anthony volpe": 0.638571391, "elly de la cruz|||xander bogaerts": 0.444425844, "elly de la cruz|||bo bichette": 0.448283652, "elly de la cruz|||zach neto": 0.481292606, "elly de la cruz|||nick allen": 0.44729424, "elly de la cruz|||geraldo perdomo": 0.431083214, "elly de la cruz|||trey sweeney": 0.528915611, "elly de la cruz|||masyn winn": 0.528882166, "elly de la cruz|||josé caballero": 0.631342655, "elly de la cruz|||brayan rocchio": 0.5507032, "elly de la cruz|||mookie betts": 0.458825591, "elly de la cruz|||taylor walls": 0.520455769, "elly de la cruz|||colson montgomery": 0.564005342, "elly de la cruz|||gabriel arias": 0.496847087, "elly de la cruz|||joey ortiz": 0.462350463, "elly de la cruz|||otto lopez": 0.523711973, "elly de la cruz|||jared triolo": 0.678980977, "elly de la cruz|||trevor story": 0.501650124, "elly de la cruz|||brooks lee": 0.472857709, "elly de la cruz|||josh smith": 0.510969277, "elly de la cruz|||chase meidroth": 0.40391336, "elly de la cruz|||isiah kiner-falefa": 0.427090566, "elly de la cruz|||jacob wilson": 0.405186416, "gunnar henderson|||elly de la cruz": 0.896613242, "gunnar henderson|||gunnar henderson": 0.0, "gunnar henderson|||bobby witt jr.": 0.883160663, "gunnar henderson|||carlos correa": 0.458560547, "gunnar henderson|||javier báez": 0.552920799, "gunnar henderson|||willy adames": 0.516547187, "gunnar henderson|||trea turner": 0.487664888, "gunnar henderson|||ezequiel tovar": 0.572529004, "gunnar henderson|||j.p. crawford": 0.459881143, "gunnar henderson|||corey seager": 0.462108345, "gunnar henderson|||jeremy peña": 0.636074465, "gunnar henderson|||cj abrams": 0.626220283, "gunnar henderson|||dansby swanson": 0.543774757, "gunnar henderson|||francisco lindor": 0.831551962, "gunnar henderson|||anthony volpe": 0.623814358, "gunnar henderson|||xander bogaerts": 0.460025669, "gunnar henderson|||bo bichette": 0.465739353, "gunnar henderson|||zach neto": 0.495344624, "gunnar henderson|||nick allen": 0.455458854, "gunnar henderson|||geraldo perdomo": 0.439036247, "gunnar henderson|||trey sweeney": 0.543080045, "gunnar henderson|||masyn winn": 0.546959435, "gunnar henderson|||josé caballero": 0.662268688, "gunnar henderson|||brayan rocchio": 0.570976634, "gunnar henderson|||mookie betts": 0.472986755, "gunnar henderson|||taylor walls": 0.542264588, "gunnar henderson|||colson montgomery": 0.579479033, "gunnar henderson|||gabriel arias": 0.511135906, "gunnar henderson|||joey ortiz": 0.475100417, "gunnar henderson|||otto lopez": 0.540348593, "gunnar henderson|||jared triolo": 0.688719377, "gunnar henderson|||trevor story": 0.488526809, "gunnar henderson|||brooks lee": 0.490003449, "gunnar henderson|||josh smith": 0.529048101, "gunnar henderson|||chase meidroth": 0.411534864, "gunnar henderson|||isiah kiner-falefa": 0.441232252, "gunnar henderson|||jacob wilson": 0.412850614, "bobby witt jr.|||elly de la cruz": 0.897100615, "bobby witt jr.|||gunnar henderson": 0.861991848, "bobby witt jr.|||bobby witt jr.": 0.0, "bobby witt jr.|||carlos correa": 0.44631486, "bobby witt jr.|||javier báez": 0.549485103, "bobby witt jr.|||willy adames": 0.518691095, "bobby witt jr.|||trea turner": 0.481183189, "bobby witt jr.|||ezequiel tovar": 0.566444023, "bobby witt jr.|||j.p. crawford": 0.443725674, "bobby witt jr.|||corey seager": 0.45549157, "bobby witt jr.|||jeremy peña": 0.618062239, "bobby witt jr.|||cj abrams": 0.609797834, "bobby witt jr.|||dansby swanson": 0.544929068, "bobby witt jr.|||francisco lindor": 0.770111513, "bobby witt jr.|||anthony volpe": 0.612779053, "bobby witt jr.|||xander bogaerts": 0.44133153, "bobby witt jr.|||bo bichette": 0.450242696, "bobby witt jr.|||zach neto": 0.495375963, "bobby witt jr.|||nick allen": 0.441807116, "bobby witt jr.|||geraldo perdomo": 0.425437505, "bobby witt jr.|||trey sweeney": 0.541440295, "bobby witt jr.|||masyn winn": 0.524870326, "bobby witt jr.|||josé caballero": 0.635273528, "bobby witt jr.|||brayan rocchio": 0.551397851, "bobby witt jr.|||mookie betts": 0.454538757, "bobby witt jr.|||taylor walls": 0.518356274, "bobby witt jr.|||colson montgomery": 0.579525094, "bobby witt jr.|||gabriel arias": 0.511549822, "bobby witt jr.|||joey ortiz": 0.456781044, "bobby witt jr.|||otto lopez": 0.516429465, "bobby witt jr.|||jared triolo": 0.645815118, "bobby witt jr.|||trevor story": 0.4818348, "bobby witt jr.|||brooks lee": 0.476087205, "bobby witt jr.|||josh smith": 0.508833685, "bobby witt jr.|||chase meidroth": 0.398386541, "bobby witt jr.|||isiah kiner-falefa": 0.42233501, "bobby witt jr.|||jacob wilson": 0.399751647, "carlos correa|||elly de la cruz": 0.542590156, "carlos correa|||gunnar henderson": 0.545491957, "carlos correa|||bobby witt jr.": 0.554415085, "carlos correa|||carlos correa": 0.0, "carlos correa|||javier báez": 0.657334552, "carlos correa|||willy adames": 0.598731991, "carlos correa|||trea turner": 0.360014455, "carlos correa|||ezequiel tovar": 0.729617247, "carlos correa|||j.p. crawford": 0.655040394, "carlos correa|||corey seager": 0.695724594, "carlos correa|||jeremy peña": 0.7289766, "carlos correa|||cj abrams": 0.461878801, "carlos correa|||dansby swanson": 0.593549716, "carlos correa|||francisco lindor": 0.520495931, "carlos correa|||anthony volpe": 0.46483036, "carlos correa|||xander bogaerts": 0.573487769, "carlos correa|||bo bichette": 0.715117944, "carlos correa|||zach neto": 0.621497363, "carlos correa|||nick allen": 0.489802176, "carlos correa|||geraldo perdomo": 0.470162952, "carlos correa|||trey sweeney": 0.699375731, "carlos correa|||masyn winn": 0.641637401, "carlos correa|||josé caballero": 0.697751146, "carlos correa|||brayan rocchio": 0.760927796, "carlos correa|||mookie betts": 0.559324677, "carlos correa|||taylor walls": 0.653807016, "carlos correa|||colson montgomery": 0.689229536, "carlos correa|||gabriel arias": 0.628319242, "carlos correa|||joey ortiz": 0.534775874, "carlos correa|||otto lopez": 0.580517999, "carlos correa|||jared triolo": 0.492831743, "carlos correa|||trevor story": 0.357363943, "carlos correa|||brooks lee": 0.783421037, "carlos correa|||josh smith": 0.663233187, "carlos correa|||chase meidroth": 0.4416373, "carlos correa|||isiah kiner-falefa": 0.519272807, "carlos correa|||jacob wilson": 0.444242091, "javier báez|||elly de la cruz": 0.592284835, "javier báez|||gunnar henderson": 0.596168025, "javier báez|||bobby witt jr.": 0.613901143, "javier báez|||carlos correa": 0.613650367, "javier báez|||javier báez": 0.0, "javier báez|||willy adames": 0.776899956, "javier báez|||trea turner": 0.373307584, "javier báez|||ezequiel tovar": 0.871440184, "javier báez|||j.p. crawford": 0.525339582, "javier báez|||corey seager": 0.699150742, "javier báez|||jeremy peña": 0.759034182, "javier báez|||cj abrams": 0.476589552, "javier báez|||dansby swanson": 0.802759826, "javier báez|||francisco lindor": 0.573193415, "javier báez|||anthony volpe": 0.481027981, "javier báez|||xander bogaerts": 0.485907244, "javier báez|||bo bichette": 0.555209264, "javier báez|||zach neto": 0.744939728, "javier báez|||nick allen": 0.447880956, "javier báez|||geraldo perdomo": 0.429786756, "javier báez|||trey sweeney": 0.783588265, "javier báez|||masyn winn": 0.562559132, "javier báez|||josé caballero": 0.697593319, "javier báez|||brayan rocchio": 0.639030931, "javier báez|||mookie betts": 0.485667048, "javier báez|||taylor walls": 0.572272894, "javier báez|||colson montgomery": 0.859077232, "javier báez|||gabriel arias": 0.767055431, "javier báez|||joey ortiz": 0.47439267, "javier báez|||otto lopez": 0.525200682, "javier báez|||jared triolo": 0.506728793, "javier báez|||trevor story": 0.371117378, "javier báez|||brooks lee": 0.598469651, "javier báez|||josh smith": 0.565279511, "javier báez|||chase meidroth": 0.402454917, "javier báez|||isiah kiner-falefa": 0.449327728, "javier báez|||jacob wilson": 0.40456175, "willy adames|||elly de la cruz": 0.571628633, "willy adames|||gunnar henderson": 0.571080624, "willy adames|||bobby witt jr.": 0.594393347, "willy adames|||carlos correa": 0.566334018, "willy adames|||javier báez": 0.788186167, "willy adames|||willy adames": 0.0, "willy adames|||trea turner": 0.361746232, "willy adames|||ezequiel tovar": 0.784611355, "willy adames|||j.p. crawford": 0.491036183, "willy adames|||corey seager": 0.65977688, "willy adames|||jeremy peña": 0.685132373, "willy adames|||cj abrams": 0.460519077, "willy adames|||dansby swanson": 0.781732511, "willy adames|||francisco lindor": 0.542735722, "willy adames|||anthony volpe": 0.46679054, "willy adames|||xander bogaerts": 0.455059706, "willy adames|||bo bichette": 0.516430615, "willy adames|||zach neto": 0.801046475, "willy adames|||nick allen": 0.430544488, "willy adames|||geraldo perdomo": 0.412698417, "willy adames|||trey sweeney": 0.80976006, "willy adames|||masyn winn": 0.527599559, "willy adames|||josé caballero": 0.638871804, "willy adames|||brayan rocchio": 0.59448448, "willy adames|||mookie betts": 0.457973228, "willy adames|||taylor walls": 0.529196438, "willy adames|||colson montgomery": 0.915066138, "willy adames|||gabriel arias": 0.833061326, "willy adames|||joey ortiz": 0.449333371, "willy adames|||otto lopez": 0.494308946, "willy adames|||jared triolo": 0.481651149, "willy adames|||trevor story": 0.359333581, "willy adames|||brooks lee": 0.55965868, "willy adames|||josh smith": 0.52879469, "willy adames|||chase meidroth": 0.385953028, "willy adames|||isiah kiner-falefa": 0.421748431, "willy adames|||jacob wilson": 0.388047249, "trea turner|||elly de la cruz": 0.582938203, "trea turner|||gunnar henderson": 0.554777967, "trea turner|||bobby witt jr.": 0.569465082, "trea turner|||carlos correa": 0.340196123, "trea turner|||javier báez": 0.397173437, "trea turner|||willy adames": 0.374325874, "trea turner|||trea turner": 0.0, "trea turner|||ezequiel tovar": 0.425550849, "trea turner|||j.p. crawford": 0.369158096, "trea turner|||corey seager": 0.335433757, "trea turner|||jeremy peña": 0.462903418, "trea turner|||cj abrams": 0.744712669, "trea turner|||dansby swanson": 0.379951554, "trea turner|||francisco lindor": 0.492053677, "trea turner|||anthony volpe": 0.806173375, "trea turner|||xander bogaerts": 0.382399208, "trea turner|||bo bichette": 0.36417211, "trea turner|||zach neto": 0.36804433, "trea turner|||nick allen": 0.43400986, "trea turner|||geraldo perdomo": 0.419757737, "trea turner|||trey sweeney": 0.421421005, "trea turner|||masyn winn": 0.45603542, "trea turner|||josé caballero": 0.483628633, "trea turner|||brayan rocchio": 0.457070302, "trea turner|||mookie betts": 0.407316129, "trea turner|||taylor walls": 0.425309199, "trea turner|||colson montgomery": 0.440899362, "trea turner|||gabriel arias": 0.380451941, "trea turner|||joey ortiz": 0.421962874, "trea turner|||otto lopez": 0.464373155, "trea turner|||jared triolo": 0.576595315, "trea turner|||trevor story": 0.861052871, "trea turner|||brooks lee": 0.386456232, "trea turner|||josh smith": 0.434226775, "trea turner|||chase meidroth": 0.394210301, "trea turner|||isiah kiner-falefa": 0.37684666, "trea turner|||jacob wilson": 0.394833015, "ezequiel tovar|||elly de la cruz": 0.579253049, "ezequiel tovar|||gunnar henderson": 0.583203893, "ezequiel tovar|||bobby witt jr.": 0.598287728, "ezequiel tovar|||carlos correa": 0.653360727, "ezequiel tovar|||javier báez": 0.838867848, "ezequiel tovar|||willy adames": 0.740752808, "ezequiel tovar|||trea turner": 0.36911266, "ezequiel tovar|||ezequiel tovar": 0.0, "ezequiel tovar|||j.p. crawford": 0.546846695, "ezequiel tovar|||corey seager": 0.749826377, "ezequiel tovar|||jeremy peña": 0.769294347, "ezequiel tovar|||cj abrams": 0.471989481, "ezequiel tovar|||dansby swanson": 0.743079253, "ezequiel tovar|||francisco lindor": 0.560258833, "ezequiel tovar|||anthony volpe": 0.47608509, "ezequiel tovar|||xander bogaerts": 0.500813116, "ezequiel tovar|||bo bichette": 0.581389673, "ezequiel tovar|||zach neto": 0.741129568, "ezequiel tovar|||nick allen": 0.45493512, "ezequiel tovar|||geraldo perdomo": 0.436565954, "ezequiel tovar|||trey sweeney": 0.79716381, "ezequiel tovar|||masyn winn": 0.576551, "ezequiel tovar|||josé caballero": 0.704316232, "ezequiel tovar|||brayan rocchio": 0.6613179, "ezequiel tovar|||mookie betts": 0.498183299, "ezequiel tovar|||taylor walls": 0.588199987, "ezequiel tovar|||colson montgomery": 0.837318198, "ezequiel tovar|||gabriel arias": 0.756522538, "ezequiel tovar|||joey ortiz": 0.484624549, "ezequiel tovar|||otto lopez": 0.534900593, "ezequiel tovar|||jared triolo": 0.502568954, "ezequiel tovar|||trevor story": 0.366805498, "ezequiel tovar|||brooks lee": 0.628168286, "ezequiel tovar|||josh smith": 0.582361208, "ezequiel tovar|||chase meidroth": 0.40903775, "ezequiel tovar|||isiah kiner-falefa": 0.461232538, "ezequiel tovar|||jacob wilson": 0.411236613, "j.p. crawford|||elly de la cruz": 0.519106032, "j.p. crawford|||gunnar henderson": 0.520033987, "j.p. crawford|||bobby witt jr.": 0.525047333, "j.p. crawford|||carlos correa": 0.628261828, "j.p. crawford|||javier báez": 0.542245201, "j.p. crawford|||willy adames": 0.49665559, "j.p. crawford|||trea turner": 0.362197862, "j.p. crawford|||ezequiel tovar": 0.59632465, "j.p. crawford|||j.p. crawford": 0.0, "j.p. crawford|||corey seager": 0.537356601, "j.p. crawford|||jeremy peña": 0.640124365, "j.p. crawford|||cj abrams": 0.464219735, "j.p. crawford|||dansby swanson": 0.496080724, "j.p. crawford|||francisco lindor": 0.491338487, "j.p. crawford|||anthony volpe": 0.465612357, "j.p. crawford|||xander bogaerts": 0.722227449, "j.p. crawford|||bo bichette": 0.787751376, "j.p. crawford|||zach neto": 0.509830052, "j.p. crawford|||nick allen": 0.557202668, "j.p. crawford|||geraldo perdomo": 0.535247945, "j.p. crawford|||trey sweeney": 0.57929096, "j.p. crawford|||masyn winn": 0.754196229, "j.p. crawford|||josé caballero": 0.652145078, "j.p. crawford|||brayan rocchio": 0.817964119, "j.p. crawford|||mookie betts": 0.684156207, "j.p. crawford|||taylor walls": 0.714528767, "j.p. crawford|||colson montgomery": 0.577927261, "j.p. crawford|||gabriel arias": 0.518229781, "j.p. crawford|||joey ortiz": 0.636196495, "j.p. crawford|||otto lopez": 0.66450548, "j.p. crawford|||jared triolo": 0.494775314, "j.p. crawford|||trevor story": 0.359282985, "j.p. crawford|||brooks lee": 0.76328053, "j.p. crawford|||josh smith": 0.801640111, "j.p. crawford|||chase meidroth": 0.504364982, "j.p. crawford|||isiah kiner-falefa": 0.636985047, "j.p. crawford|||jacob wilson": 0.507597063, "corey seager|||elly de la cruz": 0.54758849, "corey seager|||gunnar henderson": 0.54921823, "corey seager|||bobby witt jr.": 0.563770269, "corey seager|||carlos correa": 0.695903068, "corey seager|||javier báez": 0.743013401, "corey seager|||willy adames": 0.692353328, "corey seager|||trea turner": 0.355430563, "corey seager|||ezequiel tovar": 0.826261372, "corey seager|||j.p. crawford": 0.564313641, "corey seager|||corey seager": 0.0, "corey seager|||jeremy peña": 0.721451302, "corey seager|||cj abrams": 0.455046716, "corey seager|||dansby swanson": 0.667256755, "corey seager|||francisco lindor": 0.523265455, "corey seager|||anthony volpe": 0.459687992, "corey seager|||xander bogaerts": 0.507465412, "corey seager|||bo bichette": 0.604072888, "corey seager|||zach neto": 0.733041776, "corey seager|||nick allen": 0.457347412, "corey seager|||geraldo perdomo": 0.438613989, "corey seager|||trey sweeney": 0.820558874, "corey seager|||masyn winn": 0.577227013, "corey seager|||josé caballero": 0.670119092, "corey seager|||brayan rocchio": 0.66761254, "corey seager|||mookie betts": 0.502919765, "corey seager|||taylor walls": 0.584066837, "corey seager|||colson montgomery": 0.795102269, "corey seager|||gabriel arias": 0.737011056, "corey seager|||joey ortiz": 0.4870793, "corey seager|||otto lopez": 0.531237915, "corey seager|||jared triolo": 0.480725528, "corey seager|||trevor story": 0.352810316, "corey seager|||brooks lee": 0.659613566, "corey seager|||josh smith": 0.587615956, "corey seager|||chase meidroth": 0.411142391, "corey seager|||isiah kiner-falefa": 0.464818837, "corey seager|||jacob wilson": 0.413518356, "jeremy peña|||elly de la cruz": 0.625258359, "jeremy peña|||gunnar henderson": 0.637270411, "jeremy peña|||bobby witt jr.": 0.640427, "jeremy peña|||carlos correa": 0.643241136, "jeremy peña|||javier báez": 0.716982902, "jeremy peña|||willy adames": 0.631794882, "jeremy peña|||trea turner": 0.396986285, "jeremy peña|||ezequiel tovar": 0.759815403, "jeremy peña|||j.p. crawford": 0.581167467, "jeremy peña|||corey seager": 0.635537364, "jeremy peña|||jeremy peña": 0.0, "jeremy peña|||cj abrams": 0.50970255, "jeremy peña|||dansby swanson": 0.666037857, "jeremy peña|||francisco lindor": 0.623973447, "jeremy peña|||anthony volpe": 0.510018833, "jeremy peña|||xander bogaerts": 0.545835995, "jeremy peña|||bo bichette": 0.611289326, "jeremy peña|||zach neto": 0.61921891, "jeremy peña|||nick allen": 0.482019462, "jeremy peña|||geraldo perdomo": 0.463579606, "jeremy peña|||trey sweeney": 0.674986315, "jeremy peña|||masyn winn": 0.635952869, "jeremy peña|||josé caballero": 0.845982658, "jeremy peña|||brayan rocchio": 0.72298046, "jeremy peña|||mookie betts": 0.540595903, "jeremy peña|||taylor walls": 0.666347333, "jeremy peña|||colson montgomery": 0.70997947, "jeremy peña|||gabriel arias": 0.634370577, "jeremy peña|||joey ortiz": 0.525251676, "jeremy peña|||otto lopez": 0.59276757, "jeremy peña|||jared triolo": 0.560062377, "jeremy peña|||trevor story": 0.395218545, "jeremy peña|||brooks lee": 0.643647557, "jeremy peña|||josh smith": 0.637523621, "jeremy peña|||chase meidroth": 0.434958834, "jeremy peña|||isiah kiner-falefa": 0.504853124, "jeremy peña|||jacob wilson": 0.43700302, "cj abrams|||elly de la cruz": 0.655554103, "cj abrams|||gunnar henderson": 0.628299277, "cj abrams|||bobby witt jr.": 0.633045643, "cj abrams|||carlos correa": 0.377026384, "cj abrams|||javier báez": 0.43542132, "cj abrams|||willy adames": 0.408064633, "cj abrams|||trea turner": 0.679678584, "cj abrams|||ezequiel tovar": 0.463393585, "cj abrams|||j.p. crawford": 0.406145884, "cj abrams|||corey seager": 0.370015825, "cj abrams|||jeremy peña": 0.510585598, "cj abrams|||cj abrams": 0.0, "cj abrams|||dansby swanson": 0.418064044, "cj abrams|||francisco lindor": 0.562710923, "cj abrams|||anthony volpe": 0.884190164, "cj abrams|||xander bogaerts": 0.421763561, "cj abrams|||bo bichette": 0.40162307, "cj abrams|||zach neto": 0.399625345, "cj abrams|||nick allen": 0.460198342, "cj abrams|||geraldo perdomo": 0.445596583, "cj abrams|||trey sweeney": 0.452595878, "cj abrams|||masyn winn": 0.501136703, "cj abrams|||josé caballero": 0.537599017, "cj abrams|||brayan rocchio": 0.500065549, "cj abrams|||mookie betts": 0.445669318, "cj abrams|||taylor walls": 0.4735887, "cj abrams|||colson montgomery": 0.474676853, "cj abrams|||gabriel arias": 0.412551835, "cj abrams|||joey ortiz": 0.459558774, "cj abrams|||otto lopez": 0.512850638, "cj abrams|||jared triolo": 0.689318329, "cj abrams|||trevor story": 0.686470859, "cj abrams|||brooks lee": 0.422600338, "cj abrams|||josh smith": 0.476725446, "cj abrams|||chase meidroth": 0.418905127, "cj abrams|||isiah kiner-falefa": 0.415922368, "cj abrams|||jacob wilson": 0.419512594, "dansby swanson|||elly de la cruz": 0.605542545, "dansby swanson|||gunnar henderson": 0.608295458, "dansby swanson|||bobby witt jr.": 0.630618584, "dansby swanson|||carlos correa": 0.571139007, "dansby swanson|||javier báez": 0.824033302, "dansby swanson|||willy adames": 0.791719776, "dansby swanson|||trea turner": 0.377359177, "dansby swanson|||ezequiel tovar": 0.796925065, "dansby swanson|||j.p. crawford": 0.500448582, "dansby swanson|||corey seager": 0.644667572, "dansby swanson|||jeremy peña": 0.729362613, "dansby swanson|||cj abrams": 0.480505752, "dansby swanson|||dansby swanson": 0.0, "dansby swanson|||francisco lindor": 0.583843043, "dansby swanson|||anthony volpe": 0.485619093, "dansby swanson|||xander bogaerts": 0.46754425, "dansby swanson|||bo bichette": 0.525494851, "dansby swanson|||zach neto": 0.725675191, "dansby swanson|||nick allen": 0.43892279, "dansby swanson|||geraldo perdomo": 0.421133968, "dansby swanson|||trey sweeney": 0.752290087, "dansby swanson|||masyn winn": 0.544312303, "dansby swanson|||josé caballero": 0.678777921, "dansby swanson|||brayan rocchio": 0.611536664, "dansby swanson|||mookie betts": 0.470021819, "dansby swanson|||taylor walls": 0.550575027, "dansby swanson|||colson montgomery": 0.842382647, "dansby swanson|||gabriel arias": 0.751842755, "dansby swanson|||joey ortiz": 0.461310787, "dansby swanson|||otto lopez": 0.511688758, "dansby swanson|||jared triolo": 0.508590212, "dansby swanson|||trevor story": 0.375281605, "dansby swanson|||brooks lee": 0.565686496, "dansby swanson|||josh smith": 0.54396096, "dansby swanson|||chase meidroth": 0.394066755, "dansby swanson|||isiah kiner-falefa": 0.434276557, "dansby swanson|||jacob wilson": 0.396079063, "francisco lindor|||elly de la cruz": 0.831844775, "francisco lindor|||gunnar henderson": 0.878253026, "francisco lindor|||bobby witt jr.": 0.837981392, "francisco lindor|||carlos correa": 0.480265585, "francisco lindor|||javier báez": 0.576647253, "francisco lindor|||willy adames": 0.534903349, "francisco lindor|||trea turner": 0.471641663, "francisco lindor|||ezequiel tovar": 0.596285008, "francisco lindor|||j.p. crawford": 0.477886707, "francisco lindor|||corey seager": 0.482856635, "francisco lindor|||jeremy peña": 0.669478566, "francisco lindor|||cj abrams": 0.607332994, "francisco lindor|||dansby swanson": 0.566023406, "francisco lindor|||francisco lindor": 0.0, "francisco lindor|||anthony volpe": 0.603854356, "francisco lindor|||xander bogaerts": 0.476079998, "francisco lindor|||bo bichette": 0.485489688, "francisco lindor|||zach neto": 0.512671503, "francisco lindor|||nick allen": 0.462526386, "francisco lindor|||geraldo perdomo": 0.445826033, "francisco lindor|||trey sweeney": 0.560480223, "francisco lindor|||masyn winn": 0.565468227, "francisco lindor|||josé caballero": 0.698853179, "francisco lindor|||brayan rocchio": 0.593666403, "francisco lindor|||mookie betts": 0.48700281, "francisco lindor|||taylor walls": 0.565789167, "francisco lindor|||colson montgomery": 0.59853647, "francisco lindor|||gabriel arias": 0.528760849, "francisco lindor|||joey ortiz": 0.487087479, "francisco lindor|||otto lopez": 0.555900598, "francisco lindor|||jared triolo": 0.681408684, "francisco lindor|||trevor story": 0.471985695, "francisco lindor|||brooks lee": 0.509704995, "francisco lindor|||josh smith": 0.54825657, "francisco lindor|||chase meidroth": 0.418012629, "francisco lindor|||isiah kiner-falefa": 0.455053755, "francisco lindor|||jacob wilson": 0.419403937, "anthony volpe|||elly de la cruz": 0.641571391, "anthony volpe|||gunnar henderson": 0.61137334, "anthony volpe|||bobby witt jr.": 0.621506851, "anthony volpe|||carlos correa": 0.365457933, "anthony volpe|||javier báez": 0.425339738, "anthony volpe|||willy adames": 0.399816086, "anthony volpe|||trea turner": 0.72661928, "anthony volpe|||ezequiel tovar": 0.452969184, "anthony volpe|||j.p. crawford": 0.393018496, "anthony volpe|||corey seager": 0.360137091, "anthony volpe|||jeremy peña": 0.49638187, "anthony volpe|||cj abrams": 0.869670154, "anthony volpe|||dansby swanson": 0.408657375, "anthony volpe|||francisco lindor": 0.544712274, "anthony volpe|||anthony volpe": 0.0, "anthony volpe|||xander bogaerts": 0.406831104, "anthony volpe|||bo bichette": 0.388840915, "anthony volpe|||zach neto": 0.391569957, "anthony volpe|||nick allen": 0.448242072, "anthony volpe|||geraldo perdomo": 0.4336647, "anthony volpe|||trey sweeney": 0.44435796, "anthony volpe|||masyn winn": 0.484230509, "anthony volpe|||josé caballero": 0.520637398, "anthony volpe|||brayan rocchio": 0.485247165, "anthony volpe|||mookie betts": 0.430582334, "anthony volpe|||taylor walls": 0.456470528, "anthony volpe|||colson montgomery": 0.466108673, "anthony volpe|||gabriel arias": 0.404434327, "anthony volpe|||joey ortiz": 0.44415012, "anthony volpe|||otto lopez": 0.493711873, "anthony volpe|||jared triolo": 0.649373036, "anthony volpe|||trevor story": 0.736687999, "anthony volpe|||brooks lee": 0.41056749, "anthony volpe|||josh smith": 0.461203595, "anthony volpe|||chase meidroth": 0.407386198, "anthony volpe|||isiah kiner-falefa": 0.400433879, "anthony volpe|||jacob wilson": 0.408046881, "xander bogaerts|||elly de la cruz": 0.520248832, "xander bogaerts|||gunnar henderson": 0.520407639, "xander bogaerts|||bobby witt jr.": 0.522882315, "xander bogaerts|||carlos correa": 0.546938329, "xander bogaerts|||javier báez": 0.503041989, "xander bogaerts|||willy adames": 0.46090824, "xander bogaerts|||trea turner": 0.3756681, "xander bogaerts|||ezequiel tovar": 0.550520197, "xander bogaerts|||j.p. crawford": 0.722456575, "xander bogaerts|||corey seager": 0.480737498, "xander bogaerts|||jeremy peña": 0.605022019, "xander bogaerts|||cj abrams": 0.480066537, "xander bogaerts|||dansby swanson": 0.463405518, "xander bogaerts|||francisco lindor": 0.489760904, "xander bogaerts|||anthony volpe": 0.479654091, "xander bogaerts|||xander bogaerts": 0.0, "xander bogaerts|||bo bichette": 0.659336734, "xander bogaerts|||zach neto": 0.468675644, "xander bogaerts|||nick allen": 0.614794209, "xander bogaerts|||geraldo perdomo": 0.591535102, "xander bogaerts|||trey sweeney": 0.533797645, "xander bogaerts|||masyn winn": 0.837645567, "xander bogaerts|||josé caballero": 0.632030818, "xander bogaerts|||brayan rocchio": 0.753750137, "xander bogaerts|||mookie betts": 0.819544432, "xander bogaerts|||taylor walls": 0.715688326, "xander bogaerts|||colson montgomery": 0.538591497, "xander bogaerts|||gabriel arias": 0.478222608, "xander bogaerts|||joey ortiz": 0.74370374, "xander bogaerts|||otto lopez": 0.755253414, "xander bogaerts|||jared triolo": 0.51258399, "xander bogaerts|||trevor story": 0.3727325, "xander bogaerts|||brooks lee": 0.649111978, "xander bogaerts|||josh smith": 0.82820927, "xander bogaerts|||chase meidroth": 0.55757962, "xander bogaerts|||isiah kiner-falefa": 0.767625265, "xander bogaerts|||jacob wilson": 0.560844825, "bo bichette|||elly de la cruz": 0.528877593, "bo bichette|||gunnar henderson": 0.530892277, "bo bichette|||bobby witt jr.": 0.536564435, "bo bichette|||carlos correa": 0.693339458, "bo bichette|||javier báez": 0.577114962, "bo bichette|||willy adames": 0.527050102, "bo bichette|||trea turner": 0.362211956, "bo bichette|||ezequiel tovar": 0.635867708, "bo bichette|||j.p. crawford": 0.792751456, "bo bichette|||corey seager": 0.582115928, "bo bichette|||jeremy peña": 0.675246304, "bo bichette|||cj abrams": 0.464697, "bo bichette|||dansby swanson": 0.526127073, "bo bichette|||francisco lindor": 0.503941548, "bo bichette|||anthony volpe": 0.466434856, "bo bichette|||xander bogaerts": 0.664107688, "bo bichette|||bo bichette": 0.0, "bo bichette|||zach neto": 0.542464722, "bo bichette|||nick allen": 0.531077178, "bo bichette|||geraldo perdomo": 0.51009537, "bo bichette|||trey sweeney": 0.614172367, "bo bichette|||masyn winn": 0.718874406, "bo bichette|||josé caballero": 0.677348343, "bo bichette|||brayan rocchio": 0.842169391, "bo bichette|||mookie betts": 0.635123475, "bo bichette|||taylor walls": 0.712596595, "bo bichette|||colson montgomery": 0.610702183, "bo bichette|||gabriel arias": 0.550488079, "bo bichette|||joey ortiz": 0.596918963, "bo bichette|||otto lopez": 0.636809609, "bo bichette|||jared triolo": 0.496748683, "bo bichette|||trevor story": 0.359418051, "bo bichette|||brooks lee": 0.846440593, "bo bichette|||josh smith": 0.759699823, "bo bichette|||chase meidroth": 0.480143966, "bo bichette|||isiah kiner-falefa": 0.591351135, "bo bichette|||jacob wilson": 0.48310488, "zach neto|||elly de la cruz": 0.546316367, "zach neto|||gunnar henderson": 0.544927367, "zach neto|||bobby witt jr.": 0.566127522, "zach neto|||carlos correa": 0.584148697, "zach neto|||javier báez": 0.751275247, "zach neto|||willy adames": 0.796095783, "zach neto|||trea turner": 0.350513996, "zach neto|||ezequiel tovar": 0.780037422, "zach neto|||j.p. crawford": 0.499259952, "zach neto|||corey seager": 0.695514636, "zach neto|||jeremy peña": 0.667605708, "zach neto|||cj abrams": 0.447129095, "zach neto|||dansby swanson": 0.710737233, "zach neto|||francisco lindor": 0.515553183, "zach neto|||anthony volpe": 0.453593718, "zach neto|||xander bogaerts": 0.457876418, "zach neto|||bo bichette": 0.526894542, "zach neto|||zach neto": 0.0, "zach neto|||nick allen": 0.431208811, "zach neto|||geraldo perdomo": 0.413143339, "zach neto|||trey sweeney": 0.895724121, "zach neto|||masyn winn": 0.527289629, "zach neto|||josé caballero": 0.622855501, "zach neto|||brayan rocchio": 0.597515909, "zach neto|||mookie betts": 0.459770028, "zach neto|||taylor walls": 0.526911975, "zach neto|||colson montgomery": 0.897235573, "zach neto|||gabriel arias": 0.889658761, "zach neto|||joey ortiz": 0.449857054, "zach neto|||otto lopez": 0.491393095, "zach neto|||jared triolo": 0.465755019, "zach neto|||trevor story": 0.347860225, "zach neto|||brooks lee": 0.57393069, "zach neto|||josh smith": 0.530940812, "zach neto|||chase meidroth": 0.386454177, "zach neto|||isiah kiner-falefa": 0.422903271, "zach neto|||jacob wilson": 0.388659599, "nick allen|||elly de la cruz": 0.456780726, "nick allen|||gunnar henderson": 0.449504323, "nick allen|||bobby witt jr.": 0.4570214, "nick allen|||carlos correa": 0.396916235, "nick allen|||javier báez": 0.3986792, "nick allen|||willy adames": 0.370056521, "nick allen|||trea turner": 0.360942251, "nick allen|||ezequiel tovar": 0.4383057, "nick allen|||j.p. crawford": 0.491095293, "nick allen|||corey seager": 0.364282997, "nick allen|||jeremy peña": 0.474868985, "nick allen|||cj abrams": 0.452164818, "nick allen|||dansby swanson": 0.368447558, "nick allen|||francisco lindor": 0.409870792, "nick allen|||anthony volpe": 0.454728559, "nick allen|||xander bogaerts": 0.548457709, "nick allen|||bo bichette": 0.459969723, "nick allen|||zach neto": 0.375671537, "nick allen|||nick allen": 0.0, "nick allen|||geraldo perdomo": 0.915796422, "nick allen|||trey sweeney": 0.43697828, "nick allen|||masyn winn": 0.585638049, "nick allen|||josé caballero": 0.495893351, "nick allen|||brayan rocchio": 0.542815139, "nick allen|||mookie betts": 0.611164969, "nick allen|||taylor walls": 0.50802734, "nick allen|||colson montgomery": 0.443401071, "nick allen|||gabriel arias": 0.385487155, "nick allen|||joey ortiz": 0.668373756, "nick allen|||otto lopez": 0.604017626, "nick allen|||jared triolo": 0.454931507, "nick allen|||trevor story": 0.356845669, "nick allen|||brooks lee": 0.471424944, "nick allen|||josh smith": 0.557830662, "nick allen|||chase meidroth": 0.865934103, "nick allen|||isiah kiner-falefa": 0.583031854, "nick allen|||jacob wilson": 0.872681044, "geraldo perdomo|||elly de la cruz": 0.456072444, "geraldo perdomo|||gunnar henderson": 0.44858446, "geraldo perdomo|||bobby witt jr.": 0.456154533, "geraldo perdomo|||carlos correa": 0.392779755, "geraldo perdomo|||javier báez": 0.396087743, "geraldo perdomo|||willy adames": 0.367713193, "geraldo perdomo|||trea turner": 0.362192871, "geraldo perdomo|||ezequiel tovar": 0.435439277, "geraldo perdomo|||j.p. crawford": 0.484643314, "geraldo perdomo|||corey seager": 0.361052318, "geraldo perdomo|||jeremy peña": 0.471931873, "geraldo perdomo|||cj abrams": 0.453065802, "geraldo perdomo|||dansby swanson": 0.366161479, "geraldo perdomo|||francisco lindor": 0.408673182, "geraldo perdomo|||anthony volpe": 0.45565393, "geraldo perdomo|||xander bogaerts": 0.540701345, "geraldo perdomo|||bo bichette": 0.454490659, "geraldo perdomo|||zach neto": 0.373108808, "geraldo perdomo|||nick allen": 0.931299166, "geraldo perdomo|||geraldo perdomo": 0.0, "geraldo perdomo|||trey sweeney": 0.43422528, "geraldo perdomo|||masyn winn": 0.579784177, "geraldo perdomo|||josé caballero": 0.493018923, "geraldo perdomo|||brayan rocchio": 0.537812735, "geraldo perdomo|||mookie betts": 0.602229858, "geraldo perdomo|||taylor walls": 0.503433947, "geraldo perdomo|||colson montgomery": 0.440895682, "geraldo perdomo|||gabriel arias": 0.382971534, "geraldo perdomo|||joey ortiz": 0.659006356, "geraldo perdomo|||otto lopez": 0.599412271, "geraldo perdomo|||jared triolo": 0.454813182, "geraldo perdomo|||trevor story": 0.358054374, "geraldo perdomo|||brooks lee": 0.466331656, "geraldo perdomo|||josh smith": 0.551708051, "geraldo perdomo|||chase meidroth": 0.886383762, "geraldo perdomo|||isiah kiner-falefa": 0.574391573, "geraldo perdomo|||jacob wilson": 0.886616158, "trey sweeney|||elly de la cruz": 0.536780476, "trey sweeney|||gunnar henderson": 0.535503893, "trey sweeney|||bobby witt jr.": 0.555032958, "trey sweeney|||carlos correa": 0.604868169, "trey sweeney|||javier báez": 0.732764888, "trey sweeney|||willy adames": 0.747650471, "trey sweeney|||trea turner": 0.346731774, "trey sweeney|||ezequiel tovar": 0.778912768, "trey sweeney|||j.p. crawford": 0.511561963, "trey sweeney|||corey seager": 0.725872838, "trey sweeney|||jeremy peña": 0.666214217, "trey sweeney|||cj abrams": 0.442940733, "trey sweeney|||dansby swanson": 0.680193233, "trey sweeney|||francisco lindor": 0.506203007, "trey sweeney|||anthony volpe": 0.449222825, "trey sweeney|||xander bogaerts": 0.465839522, "trey sweeney|||bo bichette": 0.54144329, "trey sweeney|||zach neto": 0.838565225, "trey sweeney|||nick allen": 0.435356659, "trey sweeney|||geraldo perdomo": 0.417100915, "trey sweeney|||trey sweeney": 0.0, "trey sweeney|||masyn winn": 0.53375706, "trey sweeney|||josé caballero": 0.621927841, "trey sweeney|||brayan rocchio": 0.607474236, "trey sweeney|||mookie betts": 0.466528045, "trey sweeney|||taylor walls": 0.533124601, "trey sweeney|||colson montgomery": 0.852774566, "trey sweeney|||gabriel arias": 0.827527467, "trey sweeney|||joey ortiz": 0.455318213, "trey sweeney|||otto lopez": 0.495557439, "trey sweeney|||jared triolo": 0.461540325, "trey sweeney|||trevor story": 0.343989399, "trey sweeney|||brooks lee": 0.591293821, "trey sweeney|||josh smith": 0.539282255, "trey sweeney|||chase meidroth": 0.390334928, "trey sweeney|||isiah kiner-falefa": 0.429210247, "trey sweeney|||jacob wilson": 0.392614914, "masyn winn|||elly de la cruz": 0.547693216, "masyn winn|||gunnar henderson": 0.550329468, "masyn winn|||bobby witt jr.": 0.549409174, "masyn winn|||carlos correa": 0.558076023, "masyn winn|||javier báez": 0.52268194, "masyn winn|||willy adames": 0.476436155, "masyn winn|||trea turner": 0.392292374, "masyn winn|||ezequiel tovar": 0.569246143, "masyn winn|||j.p. crawford": 0.697413418, "masyn winn|||corey seager": 0.493487161, "masyn winn|||jeremy peña": 0.638126956, "masyn winn|||cj abrams": 0.502427742, "masyn winn|||dansby swanson": 0.483161635, "masyn winn|||francisco lindor": 0.522137196, "masyn winn|||anthony volpe": 0.500041559, "masyn winn|||xander bogaerts": 0.78063363, "masyn winn|||bo bichette": 0.657091515, "masyn winn|||zach neto": 0.481076918, "masyn winn|||nick allen": 0.594962613, "masyn winn|||geraldo perdomo": 0.573605997, "masyn winn|||trey sweeney": 0.544703245, "masyn winn|||masyn winn": 0.0, "masyn winn|||josé caballero": 0.675674243, "masyn winn|||brayan rocchio": 0.784652257, "masyn winn|||mookie betts": 0.760266525, "masyn winn|||taylor walls": 0.784448358, "masyn winn|||colson montgomery": 0.553604987, "masyn winn|||gabriel arias": 0.491411348, "masyn winn|||joey ortiz": 0.71544412, "masyn winn|||otto lopez": 0.805284221, "masyn winn|||jared triolo": 0.545977065, "masyn winn|||trevor story": 0.389731434, "masyn winn|||brooks lee": 0.648380929, "masyn winn|||josh smith": 0.855243567, "masyn winn|||chase meidroth": 0.540084132, "masyn winn|||isiah kiner-falefa": 0.72513969, "masyn winn|||jacob wilson": 0.542599972, "josé caballero|||elly de la cruz": 0.643363285, "josé caballero|||gunnar henderson": 0.6588483, "josé caballero|||bobby witt jr.": 0.653021955, "josé caballero|||carlos correa": 0.607399348, "josé caballero|||javier báez": 0.650925707, "josé caballero|||willy adames": 0.58091798, "josé caballero|||trea turner": 0.413095168, "josé caballero|||ezequiel tovar": 0.690220955, "josé caballero|||j.p. crawford": 0.588571847, "josé caballero|||corey seager": 0.579588821, "josé caballero|||jeremy peña": 0.841366325, "josé caballero|||cj abrams": 0.532099636, "josé caballero|||dansby swanson": 0.610836832, "josé caballero|||francisco lindor": 0.648731727, "josé caballero|||anthony volpe": 0.529658027, "josé caballero|||xander bogaerts": 0.56822846, "josé caballero|||bo bichette": 0.608775031, "josé caballero|||zach neto": 0.56985237, "josé caballero|||nick allen": 0.498427495, "josé caballero|||geraldo perdomo": 0.480050322, "josé caballero|||trey sweeney": 0.626083606, "josé caballero|||masyn winn": 0.668883823, "josé caballero|||josé caballero": 0.0, "josé caballero|||brayan rocchio": 0.738435851, "josé caballero|||mookie betts": 0.563931381, "josé caballero|||taylor walls": 0.706690549, "josé caballero|||colson montgomery": 0.656089609, "josé caballero|||gabriel arias": 0.584169908, "josé caballero|||joey ortiz": 0.549342871, "josé caballero|||otto lopez": 0.629956654, "josé caballero|||jared triolo": 0.596292472, "josé caballero|||trevor story": 0.411615217, "josé caballero|||brooks lee": 0.630931949, "josé caballero|||josh smith": 0.662688794, "josé caballero|||chase meidroth": 0.450746911, "josé caballero|||isiah kiner-falefa": 0.529600898, "josé caballero|||jacob wilson": 0.45264885, "brayan rocchio|||elly de la cruz": 0.556593212, "brayan rocchio|||gunnar henderson": 0.56142563, "brayan rocchio|||bobby witt jr.": 0.563015661, "brayan rocchio|||carlos correa": 0.664445381, "brayan rocchio|||javier báez": 0.5862327, "brayan rocchio|||willy adames": 0.530400038, "brayan rocchio|||trea turner": 0.380406219, "brayan rocchio|||ezequiel tovar": 0.641092005, "brayan rocchio|||j.p. crawford": 0.74826027, "brayan rocchio|||corey seager": 0.570951651, "brayan rocchio|||jeremy peña": 0.71223351, "brayan rocchio|||cj abrams": 0.488435551, "brayan rocchio|||dansby swanson": 0.537464958, "brayan rocchio|||francisco lindor": 0.537414334, "brayan rocchio|||anthony volpe": 0.488137177, "brayan rocchio|||xander bogaerts": 0.683817162, "brayan rocchio|||bo bichette": 0.767465462, "brayan rocchio|||zach neto": 0.538382161, "brayan rocchio|||nick allen": 0.539218664, "brayan rocchio|||geraldo perdomo": 0.518713518, "brayan rocchio|||trey sweeney": 0.605499384, "brayan rocchio|||masyn winn": 0.771731219, "brayan rocchio|||josé caballero": 0.732305234, "brayan rocchio|||brayan rocchio": 0.0, "brayan rocchio|||mookie betts": 0.653698032, "brayan rocchio|||taylor walls": 0.803624903, "brayan rocchio|||colson montgomery": 0.611727776, "brayan rocchio|||gabriel arias": 0.548218136, "brayan rocchio|||joey ortiz": 0.616392501, "brayan rocchio|||otto lopez": 0.681359101, "brayan rocchio|||jared triolo": 0.530994282, "brayan rocchio|||trevor story": 0.377945531, "brayan rocchio|||brooks lee": 0.757274073, "brayan rocchio|||josh smith": 0.808023006, "brayan rocchio|||chase meidroth": 0.488005464, "brayan rocchio|||isiah kiner-falefa": 0.613127724, "brayan rocchio|||jacob wilson": 0.490620042, "mookie betts|||elly de la cruz": 0.511312911, "mookie betts|||gunnar henderson": 0.510033058, "mookie betts|||bobby witt jr.": 0.512753875, "mookie betts|||carlos correa": 0.509439569, "mookie betts|||javier báez": 0.479466125, "mookie betts|||willy adames": 0.440486094, "mookie betts|||trea turner": 0.377249354, "mookie betts|||ezequiel tovar": 0.524554712, "mookie betts|||j.p. crawford": 0.661049666, "mookie betts|||corey seager": 0.452856184, "mookie betts|||jeremy peña": 0.57644626, "mookie betts|||cj abrams": 0.480636628, "mookie betts|||dansby swanson": 0.442547421, "mookie betts|||francisco lindor": 0.477348049, "mookie betts|||anthony volpe": 0.480069654, "mookie betts|||xander bogaerts": 0.796208764, "mookie betts|||bo bichette": 0.607016854, "mookie betts|||zach neto": 0.447233587, "mookie betts|||nick allen": 0.654165803, "mookie betts|||geraldo perdomo": 0.629727948, "mookie betts|||trey sweeney": 0.5111505, "mookie betts|||masyn winn": 0.793942795, "mookie betts|||josé caballero": 0.604398071, "mookie betts|||brayan rocchio": 0.70029534, "mookie betts|||mookie betts": 0.0, "mookie betts|||taylor walls": 0.671016006, "mookie betts|||colson montgomery": 0.516887577, "mookie betts|||gabriel arias": 0.456951399, "mookie betts|||joey ortiz": 0.818229858, "mookie betts|||otto lopez": 0.768810998, "mookie betts|||jared triolo": 0.50933469, "mookie betts|||trevor story": 0.374159206, "mookie betts|||brooks lee": 0.603256218, "mookie betts|||josh smith": 0.758651341, "mookie betts|||chase meidroth": 0.593626694, "mookie betts|||isiah kiner-falefa": 0.853263273, "mookie betts|||jacob wilson": 0.597029793, "taylor walls|||elly de la cruz": 0.575060784, "taylor walls|||gunnar henderson": 0.581428586, "taylor walls|||bobby witt jr.": 0.578689087, "taylor walls|||carlos correa": 0.606039604, "taylor walls|||javier báez": 0.568189667, "taylor walls|||willy adames": 0.513826999, "taylor walls|||trea turner": 0.397360119, "taylor walls|||ezequiel tovar": 0.616689095, "taylor walls|||j.p. crawford": 0.693539921, "taylor walls|||corey seager": 0.536120951, "taylor walls|||jeremy peña": 0.704315385, "taylor walls|||cj abrams": 0.510673705, "taylor walls|||dansby swanson": 0.525218324, "taylor walls|||francisco lindor": 0.558252101, "taylor walls|||anthony volpe": 0.508075543, "taylor walls|||xander bogaerts": 0.694470354, "taylor walls|||bo bichette": 0.686607669, "taylor walls|||zach neto": 0.51649323, "taylor walls|||nick allen": 0.553145869, "taylor walls|||geraldo perdomo": 0.533049732, "taylor walls|||trey sweeney": 0.579864751, "taylor walls|||masyn winn": 0.820242323, "taylor walls|||josé caballero": 0.749274934, "taylor walls|||brayan rocchio": 0.852339906, "taylor walls|||mookie betts": 0.673133701, "taylor walls|||taylor walls": 0.0, "taylor walls|||colson montgomery": 0.592039587, "taylor walls|||gabriel arias": 0.527450734, "taylor walls|||joey ortiz": 0.640952568, "taylor walls|||otto lopez": 0.735305543, "taylor walls|||jared triolo": 0.563009705, "taylor walls|||trevor story": 0.395155389, "taylor walls|||brooks lee": 0.682393579, "taylor walls|||josh smith": 0.817319355, "taylor walls|||chase meidroth": 0.50147729, "taylor walls|||isiah kiner-falefa": 0.637102556, "taylor walls|||jacob wilson": 0.503765529, "colson montgomery|||elly de la cruz": 0.565072817, "colson montgomery|||gunnar henderson": 0.56510549, "colson montgomery|||bobby witt jr.": 0.586320367, "colson montgomery|||carlos correa": 0.587924584, "colson montgomery|||javier báez": 0.801456464, "colson montgomery|||willy adames": 0.846159159, "colson montgomery|||trea turner": 0.359412741, "colson montgomery|||ezequiel tovar": 0.812269766, "colson montgomery|||j.p. crawford": 0.503400875, "colson montgomery|||corey seager": 0.693618842, "colson montgomery|||jeremy peña": 0.694409982, "colson montgomery|||cj abrams": 0.458224317, "colson montgomery|||dansby swanson": 0.763488404, "colson montgomery|||francisco lindor": 0.537461863, "colson montgomery|||anthony volpe": 0.464176148, "colson montgomery|||xander bogaerts": 0.463835985, "colson montgomery|||bo bichette": 0.531175717, "colson montgomery|||zach neto": 0.833279287, "colson montgomery|||nick allen": 0.43498206, "colson montgomery|||geraldo perdomo": 0.416973927, "colson montgomery|||trey sweeney": 0.845977176, "colson montgomery|||masyn winn": 0.535861411, "colson montgomery|||josé caballero": 0.645136455, "colson montgomery|||brayan rocchio": 0.606905239, "colson montgomery|||mookie betts": 0.465467732, "colson montgomery|||taylor walls": 0.538502047, "colson montgomery|||colson montgomery": 0.0, "colson montgomery|||gabriel arias": 0.864076383, "colson montgomery|||joey ortiz": 0.455569634, "colson montgomery|||otto lopez": 0.500302092, "colson montgomery|||jared triolo": 0.480226627, "colson montgomery|||trevor story": 0.356942291, "colson montgomery|||brooks lee": 0.576445393, "colson montgomery|||josh smith": 0.538662426, "colson montgomery|||chase meidroth": 0.390114196, "colson montgomery|||isiah kiner-falefa": 0.428904119, "colson montgomery|||jacob wilson": 0.392263291, "gabriel arias|||elly de la cruz": 0.552062787, "gabriel arias|||gunnar henderson": 0.550910589, "gabriel arias|||bobby witt jr.": 0.572493319, "gabriel arias|||carlos correa": 0.581162515, "gabriel arias|||javier báez": 0.763582888, "gabriel arias|||willy adames": 0.818302572, "gabriel arias|||trea turner": 0.353113546, "gabriel arias|||ezequiel tovar": 0.785622331, "gabriel arias|||j.p. crawford": 0.49785162, "gabriel arias|||corey seager": 0.689675855, "gabriel arias|||jeremy peña": 0.672949314, "gabriel arias|||cj abrams": 0.450247525, "gabriel arias|||dansby swanson": 0.727096736, "gabriel arias|||francisco lindor": 0.521834468, "gabriel arias|||anthony volpe": 0.456650027, "gabriel arias|||xander bogaerts": 0.457615321, "gabriel arias|||bo bichette": 0.525109838, "gabriel arias|||zach neto": 0.8798507, "gabriel arias|||nick allen": 0.431216369, "gabriel arias|||geraldo perdomo": 0.413198004, "gabriel arias|||trey sweeney": 0.874878302, "gabriel arias|||masyn winn": 0.527815998, "gabriel arias|||josé caballero": 0.627364978, "gabriel arias|||brayan rocchio": 0.597543824, "gabriel arias|||mookie betts": 0.459679779, "gabriel arias|||taylor walls": 0.528061419, "gabriel arias|||colson montgomery": 0.918224608, "gabriel arias|||gabriel arias": 0.0, "gabriel arias|||joey ortiz": 0.450010463, "gabriel arias|||otto lopez": 0.492420428, "gabriel arias|||jared triolo": 0.469532385, "gabriel arias|||trevor story": 0.350514788, "gabriel arias|||brooks lee": 0.571303273, "gabriel arias|||josh smith": 0.530952905, "gabriel arias|||chase meidroth": 0.386488436, "gabriel arias|||isiah kiner-falefa": 0.42295665, "gabriel arias|||jacob wilson": 0.388668487, "joey ortiz|||elly de la cruz": 0.504907006, "joey ortiz|||gunnar henderson": 0.502215942, "joey ortiz|||bobby witt jr.": 0.505065385, "joey ortiz|||carlos correa": 0.474959989, "joey ortiz|||javier báez": 0.45826097, "joey ortiz|||willy adames": 0.42191546, "joey ortiz|||trea turner": 0.381965321, "joey ortiz|||ezequiel tovar": 0.501065185, "joey ortiz|||j.p. crawford": 0.603159177, "joey ortiz|||corey seager": 0.427084941, "joey ortiz|||jeremy peña": 0.551171256, "joey ortiz|||cj abrams": 0.484595306, "joey ortiz|||dansby swanson": 0.423905611, "joey ortiz|||francisco lindor": 0.467501941, "joey ortiz|||anthony volpe": 0.483706663, "joey ortiz|||xander bogaerts": 0.710437295, "joey ortiz|||bo bichette": 0.558881565, "joey ortiz|||zach neto": 0.427389836, "joey ortiz|||nick allen": 0.701443812, "joey ortiz|||geraldo perdomo": 0.676573669, "joey ortiz|||trey sweeney": 0.490009891, "joey ortiz|||masyn winn": 0.739189613, "joey ortiz|||josé caballero": 0.579878784, "joey ortiz|||brayan rocchio": 0.653059031, "joey ortiz|||mookie betts": 0.80829908, "joey ortiz|||taylor walls": 0.628904095, "joey ortiz|||colson montgomery": 0.497058702, "joey ortiz|||gabriel arias": 0.437351306, "joey ortiz|||joey ortiz": 0.0, "joey ortiz|||otto lopez": 0.762838264, "joey ortiz|||jared triolo": 0.50916174, "joey ortiz|||trevor story": 0.378723092, "joey ortiz|||brooks lee": 0.560401003, "joey ortiz|||josh smith": 0.696291864, "joey ortiz|||chase meidroth": 0.637245026, "joey ortiz|||isiah kiner-falefa": 0.793551682, "joey ortiz|||jacob wilson": 0.640303081, "otto lopez|||elly de la cruz": 0.551280247, "otto lopez|||gunnar henderson": 0.55247585, "otto lopez|||bobby witt jr.": 0.549725537, "otto lopez|||carlos correa": 0.505713846, "otto lopez|||javier báez": 0.494080714, "otto lopez|||willy adames": 0.451902766, "otto lopez|||trea turner": 0.409387334, "otto lopez|||ezequiel tovar": 0.536352961, "otto lopez|||j.p. crawford": 0.616479893, "otto lopez|||corey seager": 0.456255288, "otto lopez|||jeremy peña": 0.603698881, "otto lopez|||cj abrams": 0.522898902, "otto lopez|||dansby swanson": 0.459295314, "otto lopez|||francisco lindor": 0.521326791, "otto lopez|||anthony volpe": 0.518280147, "otto lopez|||xander bogaerts": 0.706998701, "otto lopez|||bo bichette": 0.583783942, "otto lopez|||zach neto": 0.453937608, "otto lopez|||nick allen": 0.622099414, "otto lopez|||geraldo perdomo": 0.601991316, "otto lopez|||trey sweeney": 0.515260848, "otto lopez|||masyn winn": 0.814041446, "otto lopez|||josé caballero": 0.645504298, "otto lopez|||brayan rocchio": 0.703037363, "otto lopez|||mookie betts": 0.743891952, "otto lopez|||taylor walls": 0.708268802, "otto lopez|||colson montgomery": 0.526802892, "otto lopez|||gabriel arias": 0.464773002, "otto lopez|||joey ortiz": 0.747849996, "otto lopez|||otto lopez": 0.0, "otto lopez|||jared triolo": 0.568058578, "otto lopez|||trevor story": 0.406867745, "otto lopez|||brooks lee": 0.583850498, "otto lopez|||josh smith": 0.742241354, "otto lopez|||chase meidroth": 0.56682361, "otto lopez|||isiah kiner-falefa": 0.724904366, "otto lopez|||jacob wilson": 0.568550768, "jared triolo|||elly de la cruz": 0.724571633, "jared triolo|||gunnar henderson": 0.718869016, "jared triolo|||bobby witt jr.": 0.697133572, "jared triolo|||carlos correa": 0.436049972, "jared triolo|||javier báez": 0.493631206, "jared triolo|||willy adames": 0.457267352, "jared triolo|||trea turner": 0.539631876, "jared triolo|||ezequiel tovar": 0.522043703, "jared triolo|||j.p. crawford": 0.464772109, "jared triolo|||corey seager": 0.423765283, "jared triolo|||jeremy peña": 0.589016071, "jared triolo|||cj abrams": 0.717388975, "jared triolo|||dansby swanson": 0.47421915, "jared triolo|||francisco lindor": 0.664857259, "jared triolo|||anthony volpe": 0.691963692, "jared triolo|||xander bogaerts": 0.482351658, "jared triolo|||bo bichette": 0.461745398, "jared triolo|||zach neto": 0.446321915, "jared triolo|||nick allen": 0.491035677, "jared triolo|||geraldo perdomo": 0.475414608, "jared triolo|||trey sweeney": 0.499266116, "jared triolo|||masyn winn": 0.572756671, "jared triolo|||josé caballero": 0.629862498, "jared triolo|||brayan rocchio": 0.570694926, "jared triolo|||mookie betts": 0.502438026, "jared triolo|||taylor walls": 0.553995346, "jared triolo|||colson montgomery": 0.524749809, "jared triolo|||gabriel arias": 0.459907341, "jared triolo|||joey ortiz": 0.512195853, "jared triolo|||otto lopez": 0.58608096, "jared triolo|||jared triolo": 0.0, "jared triolo|||trevor story": 0.541392686, "jared triolo|||brooks lee": 0.480451939, "jared triolo|||josh smith": 0.544783358, "jared triolo|||chase meidroth": 0.447029411, "jared triolo|||isiah kiner-falefa": 0.4733563, "jared triolo|||jacob wilson": 0.447840406, "trevor story|||elly de la cruz": 0.589454158, "trevor story|||gunnar henderson": 0.560889825, "trevor story|||bobby witt jr.": 0.575366631, "trevor story|||carlos correa": 0.342795549, "trevor story|||javier báez": 0.400233169, "trevor story|||willy adames": 0.377163161, "trevor story|||trea turner": 0.866302809, "trevor story|||ezequiel tovar": 0.428493625, "trevor story|||j.p. crawford": 0.371493157, "trevor story|||corey seager": 0.338063448, "trevor story|||jeremy peña": 0.466385616, "trevor story|||cj abrams": 0.756754882, "trevor story|||dansby swanson": 0.38312392, "trevor story|||francisco lindor": 0.497647647, "trevor story|||anthony volpe": 0.821492032, "trevor story|||xander bogaerts": 0.384713546, "trevor story|||bo bichette": 0.366628143, "trevor story|||zach neto": 0.370640498, "trevor story|||nick allen": 0.435163216, "trevor story|||geraldo perdomo": 0.420869178, "trevor story|||trey sweeney": 0.423928568, "trevor story|||masyn winn": 0.458724418, "trevor story|||josé caballero": 0.487398621, "trevor story|||brayan rocchio": 0.459859552, "trevor story|||mookie betts": 0.409475919, "trevor story|||taylor walls": 0.428354407, "trevor story|||colson montgomery": 0.44367885, "trevor story|||gabriel arias": 0.383103121, "trevor story|||joey ortiz": 0.423970583, "trevor story|||otto lopez": 0.467103504, "trevor story|||jared triolo": 0.583606063, "trevor story|||trevor story": 0.0, "trevor story|||brooks lee": 0.388882934, "trevor story|||josh smith": 0.436830836, "trevor story|||chase meidroth": 0.395246955, "trevor story|||isiah kiner-falefa": 0.379027438, "trevor story|||jacob wilson": 0.395877712, "brooks lee|||elly de la cruz": 0.526273806, "brooks lee|||gunnar henderson": 0.527978529, "brooks lee|||bobby witt jr.": 0.535231101, "brooks lee|||carlos correa": 0.734464707, "brooks lee|||javier báez": 0.593197506, "brooks lee|||willy adames": 0.543100324, "brooks lee|||trea turner": 0.357318235, "brooks lee|||ezequiel tovar": 0.655468477, "brooks lee|||j.p. crawford": 0.741102766, "brooks lee|||corey seager": 0.610478762, "brooks lee|||jeremy peña": 0.680426692, "brooks lee|||cj abrams": 0.458496425, "brooks lee|||dansby swanson": 0.539140875, "brooks lee|||francisco lindor": 0.500979011, "brooks lee|||anthony volpe": 0.460983587, "brooks lee|||xander bogaerts": 0.626705088, "brooks lee|||bo bichette": 0.81926275, "brooks lee|||zach neto": 0.562323027, "brooks lee|||nick allen": 0.515354555, "brooks lee|||geraldo perdomo": 0.494758524, "brooks lee|||trey sweeney": 0.636845053, "brooks lee|||masyn winn": 0.682985976, "brooks lee|||josé caballero": 0.672327417, "brooks lee|||brayan rocchio": 0.804800159, "brooks lee|||mookie betts": 0.604184996, "brooks lee|||taylor walls": 0.681204661, "brooks lee|||colson montgomery": 0.628794016, "brooks lee|||gabriel arias": 0.569503671, "brooks lee|||joey ortiz": 0.571260558, "brooks lee|||otto lopez": 0.609698321, "brooks lee|||jared triolo": 0.48827738, "brooks lee|||trevor story": 0.354494998, "brooks lee|||brooks lee": 0.0, "brooks lee|||josh smith": 0.716436665, "brooks lee|||chase meidroth": 0.46547732, "brooks lee|||isiah kiner-falefa": 0.561405107, "brooks lee|||jacob wilson": 0.468383427, "josh smith|||elly de la cruz": 0.541241325, "josh smith|||gunnar henderson": 0.543879132, "josh smith|||bobby witt jr.": 0.54483353, "josh smith|||carlos correa": 0.591132807, "josh smith|||javier báez": 0.536863316, "josh smith|||willy adames": 0.489092284, "josh smith|||trea turner": 0.381944727, "josh smith|||ezequiel tovar": 0.586517349, "josh smith|||j.p. crawford": 0.756318297, "josh smith|||corey seager": 0.515337102, "josh smith|||jeremy peña": 0.651158706, "josh smith|||cj abrams": 0.489477482, "josh smith|||dansby swanson": 0.494271289, "josh smith|||francisco lindor": 0.516386536, "josh smith|||anthony volpe": 0.488475642, "josh smith|||xander bogaerts": 0.78265833, "josh smith|||bo bichette": 0.709377929, "josh smith|||zach neto": 0.496189098, "josh smith|||nick allen": 0.578616223, "josh smith|||geraldo perdomo": 0.556990868, "josh smith|||trey sweeney": 0.561689437, "josh smith|||masyn winn": 0.866704564, "josh smith|||josé caballero": 0.680940212, "josh smith|||brayan rocchio": 0.832405041, "josh smith|||mookie betts": 0.736436068, "josh smith|||taylor walls": 0.792986387, "josh smith|||colson montgomery": 0.567866998, "josh smith|||gabriel arias": 0.506009253, "josh smith|||joey ortiz": 0.684007369, "josh smith|||otto lopez": 0.744945127, "josh smith|||jared triolo": 0.529464749, "josh smith|||trevor story": 0.37929885, "josh smith|||brooks lee": 0.693292614, "josh smith|||josh smith": 0.0, "josh smith|||chase meidroth": 0.524522476, "josh smith|||isiah kiner-falefa": 0.693845398, "josh smith|||jacob wilson": 0.527330793, "chase meidroth|||elly de la cruz": 0.45132057, "chase meidroth|||gunnar henderson": 0.443501056, "chase meidroth|||bobby witt jr.": 0.451521548, "chase meidroth|||carlos correa": 0.386672082, "chase meidroth|||javier báez": 0.391173884, "chase meidroth|||willy adames": 0.363385784, "chase meidroth|||trea turner": 0.359063415, "chase meidroth|||ezequiel tovar": 0.430329053, "chase meidroth|||j.p. crawford": 0.476178331, "chase meidroth|||corey seager": 0.355998699, "chase meidroth|||jeremy peña": 0.465729081, "chase meidroth|||cj abrams": 0.448792326, "chase meidroth|||dansby swanson": 0.361512246, "chase meidroth|||francisco lindor": 0.403277757, "chase meidroth|||anthony volpe": 0.451793407, "chase meidroth|||xander bogaerts": 0.529163842, "chase meidroth|||bo bichette": 0.446957234, "chase meidroth|||zach neto": 0.368837625, "chase meidroth|||nick allen": 0.903854826, "chase meidroth|||geraldo perdomo": 0.908801741, "chase meidroth|||trey sweeney": 0.429877272, "chase meidroth|||masyn winn": 0.568680291, "chase meidroth|||josé caballero": 0.48613349, "chase meidroth|||brayan rocchio": 0.529522661, "chase meidroth|||mookie betts": 0.588546583, "chase meidroth|||taylor walls": 0.494279484, "chase meidroth|||colson montgomery": 0.436453931, "chase meidroth|||gabriel arias": 0.378679946, "chase meidroth|||joey ortiz": 0.642095693, "chase meidroth|||otto lopez": 0.586662545, "chase meidroth|||jared triolo": 0.448845964, "chase meidroth|||trevor story": 0.354850131, "chase meidroth|||brooks lee": 0.459468432, "chase meidroth|||josh smith": 0.541657638, "chase meidroth|||chase meidroth": 0.0, "chase meidroth|||isiah kiner-falefa": 0.560135899, "chase meidroth|||jacob wilson": 0.912807349, "isiah kiner-falefa|||elly de la cruz": 0.513675414, "isiah kiner-falefa|||gunnar henderson": 0.512376082, "isiah kiner-falefa|||bobby witt jr.": 0.514647655, "isiah kiner-falefa|||carlos correa": 0.503485227, "isiah kiner-falefa|||javier báez": 0.477224333, "isiah kiner-falefa|||willy adames": 0.438358824, "isiah kiner-falefa|||trea turner": 0.380877412, "isiah kiner-falefa|||ezequiel tovar": 0.521701478, "isiah kiner-falefa|||j.p. crawford": 0.647976033, "isiah kiner-falefa|||corey seager": 0.448852783, "isiah kiner-falefa|||jeremy peña": 0.574801008, "isiah kiner-falefa|||cj abrams": 0.484987204, "isiah kiner-falefa|||dansby swanson": 0.440899686, "isiah kiner-falefa|||francisco lindor": 0.479496521, "isiah kiner-falefa|||anthony volpe": 0.484018727, "isiah kiner-falefa|||xander bogaerts": 0.778387125, "isiah kiner-falefa|||bo bichette": 0.597342042, "isiah kiner-falefa|||zach neto": 0.444464357, "isiah kiner-falefa|||nick allen": 0.660130214, "isiah kiner-falefa|||geraldo perdomo": 0.63598719, "isiah kiner-falefa|||trey sweeney": 0.507930229, "isiah kiner-falefa|||masyn winn": 0.792913487, "isiah kiner-falefa|||josé caballero": 0.604165115, "isiah kiner-falefa|||brayan rocchio": 0.693822559, "isiah kiner-falefa|||mookie betts": 0.887360801, "isiah kiner-falefa|||taylor walls": 0.669082388, "isiah kiner-falefa|||colson montgomery": 0.514421491, "isiah kiner-falefa|||gabriel arias": 0.454325797, "isiah kiner-falefa|||joey ortiz": 0.837579987, "isiah kiner-falefa|||otto lopez": 0.783920939, "isiah kiner-falefa|||jared triolo": 0.514350491, "isiah kiner-falefa|||trevor story": 0.377808252, "isiah kiner-falefa|||brooks lee": 0.594573857, "isiah kiner-falefa|||josh smith": 0.750158198, "isiah kiner-falefa|||chase meidroth": 0.599313537, "isiah kiner-falefa|||isiah kiner-falefa": 0.0, "isiah kiner-falefa|||jacob wilson": 0.602496869, "jacob wilson|||elly de la cruz": 0.450846834, "jacob wilson|||gunnar henderson": 0.443070014, "jacob wilson|||bobby witt jr.": 0.451139863, "jacob wilson|||carlos correa": 0.387530081, "jacob wilson|||javier báez": 0.391533925, "jacob wilson|||willy adames": 0.363733214, "jacob wilson|||trea turner": 0.357939338, "jacob wilson|||ezequiel tovar": 0.430781124, "jacob wilson|||j.p. crawford": 0.47766362, "jacob wilson|||corey seager": 0.356627873, "jacob wilson|||jeremy peña": 0.466026475, "jacob wilson|||cj abrams": 0.447653002, "jacob wilson|||dansby swanson": 0.361777763, "jacob wilson|||francisco lindor": 0.402922274, "jacob wilson|||anthony volpe": 0.450707299, "jacob wilson|||xander bogaerts": 0.530682256, "jacob wilson|||bo bichette": 0.448171357, "jacob wilson|||zach neto": 0.369296256, "jacob wilson|||nick allen": 0.908854975, "jacob wilson|||geraldo perdomo": 0.907287346, "jacob wilson|||trey sweeney": 0.430410467, "jacob wilson|||masyn winn": 0.569449339, "jacob wilson|||josé caballero": 0.486288639, "jacob wilson|||brayan rocchio": 0.530390447, "jacob wilson|||mookie betts": 0.59020289, "jacob wilson|||taylor walls": 0.494820932, "jacob wilson|||colson montgomery": 0.436856234, "jacob wilson|||gabriel arias": 0.379113205, "jacob wilson|||joey ortiz": 0.643406957, "jacob wilson|||otto lopez": 0.586642911, "jacob wilson|||jared triolo": 0.447910168, "jacob wilson|||trevor story": 0.353734097, "jacob wilson|||brooks lee": 0.460627748, "jacob wilson|||josh smith": 0.542719164, "jacob wilson|||chase meidroth": 0.911060557, "jacob wilson|||isiah kiner-falefa": 0.56157244, "jacob wilson|||jacob wilson": 0.0};
+    const clusterDescriptions = {"0": "Balanced players with a relatively even profile across offense, defense, and overall contribution.", "1": "Players who combine stronger power-related output with defensive value or arm-based impact.", "2": "Players whose main value comes from speed, athleticism, and baserunning pressure.", "3": "Players who lean more toward contact quality, bat-to-ball skill, and a steadier offensive approach.", "4": "Top-tier all-around profiles with standout overall value compared with the rest of the sample."};
+    let selectedPlayer = players[0];
+
+    const ageFilter = document.getElementById("ageFilter");
+    const warFilter = document.getElementById("warFilter");
+    const clusterFilter = document.getElementById("clusterFilter");
+    const injuryFilter = document.getElementById("injuryFilter");
+    const riskFilter = document.getElementById("riskFilter");
+    const injuredPlayerSelect = document.getElementById("injuredPlayerSelect");
+    const replacementList = document.getElementById("replacementList");
+    const clusterNotes = document.getElementById("clusterNotes");
+
+    function moneyFormat(x) { return "$" + Number(x).toLocaleString(); }
+    function fillSelect(select, options) {
+      select.innerHTML = "";
+      options.forEach(option => {
+        const el = document.createElement("option");
+        el.value = option;
+        el.textContent = option;
+        select.appendChild(el);
+      });
+    }
+
+    fillSelect(ageFilter, ["All Ages", "Age 25 and under", "Age 26-29", "Age 30-33", "Age 34+"]);
+    fillSelect(warFilter, ["All WAR", "WAR 5+", "WAR 3-4.9", "WAR 1.5-2.9", "WAR below 1.5"]);
+    fillSelect(clusterFilter, ["All Clusters", "Balanced", "Power / Defense", "Speed / Base Running", "Contact", "Elite"]);
+    fillSelect(injuryFilter, ["All Injuries", "0 injuries", "1-2 injuries", "3+ injuries"]);
+    fillSelect(riskFilter, ["All Total Risk", "Low Risk (<30%)", "Medium Risk (30-70%)", "High Risk (>70%)"]);
+
+    injuredPlayerSelect.innerHTML = "";
+    players.forEach(player => {
+      const opt = document.createElement("option");
+      opt.value = player.name;
+      opt.textContent = player.name;
+      injuredPlayerSelect.appendChild(opt);
+    });
+
+    function renderClusterNotes() {
+      clusterNotes.innerHTML = "";
+      [0,1,2,3,4].forEach(k => {
+        const sample = players.find(p => p.clusterLabel === k);
+        const div = document.createElement("div");
+        div.className = "cluster-card";
+        div.innerHTML = `
+          <div class="name">${sample ? sample.clusterName : ""}</div>
+          <div class="muted">${clusterDescriptions[String(k)]}</div>
+        `;
+        clusterNotes.appendChild(div);
+      });
+    }
+
+    function pairwiseRate(sourceKey, targetKey) {
+      const key1 = `${sourceKey}|||${targetKey}`;
+      const key2 = `${targetKey}|||${sourceKey}`;
+      let val = null;
+      if (pairwise[key1] !== undefined) val = Number(pairwise[key1]);
+      else if (pairwise[key2] !== undefined) val = Number(pairwise[key2]);
+      if (val === null || Number.isNaN(val)) return null;
+      return Math.round(val * 100);
+    }
+
+    function getInjuredPlayer() {
+      return players.find(p => p.name === injuredPlayerSelect.value) || players[0];
+    }
+
+    function matchAge(player) {
+      const v = ageFilter.value;
+      if (v === "All Ages") return true;
+      if (v === "Age 25 and under") return player.age <= 25;
+      if (v === "Age 26-29") return player.age >= 26 && player.age <= 29;
+      if (v === "Age 30-33") return player.age >= 30 && player.age <= 33;
+      if (v === "Age 34+") return player.age >= 34;
+      return true;
+    }
+
+    function matchWAR(player) {
+      const v = warFilter.value;
+      if (v === "All WAR") return true;
+      if (v === "WAR 5+") return player.war >= 5;
+      if (v === "WAR 3-4.9") return player.war >= 3 && player.war < 5;
+      if (v === "WAR 1.5-2.9") return player.war >= 1.5 && player.war < 3;
+      if (v === "WAR below 1.5") return player.war < 1.5;
+      return true;
+    }
+
+    function matchCluster(player) {
+      return clusterFilter.value === "All Clusters" || player.clusterName === clusterFilter.value;
+    }
+
+    function matchInjuries(player) {
+      const v = injuryFilter.value;
+      if (v === "All Injuries") return true;
+      if (v === "0 injuries") return player.injuries === 0;
+      if (v === "1-2 injuries") return player.injuries >= 1 && player.injuries <= 2;
+      if (v === "3+ injuries") return player.injuries >= 3;
+      return true;
+    }
+
+    function matchRisk(player) {
+      const v = riskFilter.value;
+      if (v === "All Total Risk") return true;
+      if (v === "Low Risk (<30%)") return player.totalRiskPct < 30;
+      if (v === "Medium Risk (30-70%)") return player.totalRiskPct >= 30 && player.totalRiskPct <= 70;
+      if (v === "High Risk (>70%)") return player.totalRiskPct > 70;
+      return true;
+    }
+
+    function getReplacementRecommendations() {
+      const injured = getInjuredPlayer();
+      return players
+        .filter(p => p.name !== injured.name)
+        .filter(p => matchAge(p) && matchWAR(p) && matchCluster(p) && matchInjuries(p) && matchRisk(p))
+        .map(p => ({
+          ...p,
+          matchRate: pairwiseRate(injured.nameKey, p.nameKey),
+          warGap: Math.abs(injured.war - p.war).toFixed(1),
+          riskGap: Math.abs(injured.totalRiskPct - p.totalRiskPct),
+          injuryGap: Math.abs(injured.injuries - p.injuries),
+          sameCluster: injured.clusterLabel === p.clusterLabel
+        }))
+        .filter(p => p.matchRate !== null)
+        .sort((a,b) => b.matchRate - a.matchRate);
+    }
+
+    function renderProfile() {
+      document.getElementById("playerName").textContent = selectedPlayer.name;
+      document.getElementById("playerMeta").textContent = `${selectedPlayer.clusterName} · Contract ${moneyFormat(selectedPlayer.contractAAV)}`;
+      document.getElementById("clusterPill").textContent = selectedPlayer.clusterName;
+      document.getElementById("playerWAR").textContent = selectedPlayer.war.toFixed(1);
+      document.getElementById("playerAge").textContent = selectedPlayer.age;
+      document.getElementById("playerInjuries").textContent = selectedPlayer.injuries;
+      document.getElementById("playerAAV").textContent = moneyFormat(selectedPlayer.contractAAV);
+      document.getElementById("injuryRiskText").textContent = selectedPlayer.injuryRiskPct + "%";
+      document.getElementById("contractRiskText").textContent = selectedPlayer.contractRiskPct + "%";
+      document.getElementById("totalRiskText").textContent = selectedPlayer.totalRiskPct + "%";
+      document.getElementById("injuryRiskBar").style.width = selectedPlayer.injuryRiskPct + "%";
+      document.getElementById("contractRiskBar").style.width = selectedPlayer.contractRiskPct + "%";
+      document.getElementById("totalRiskBar").style.width = selectedPlayer.totalRiskPct + "%";
+      document.getElementById("summaryText").innerHTML =
+        `<strong>${selectedPlayer.name}</strong> belongs to the <strong>${selectedPlayer.clusterName}</strong> label with <strong>${selectedPlayer.injuries}</strong> injuries, <strong>${selectedPlayer.war.toFixed(1)} WAR</strong>, and <strong>${selectedPlayer.totalRiskPct}%</strong> total risk. This profile helps explain replacement choices in terms of both player type and risk burden.`;
+    }
+
+    function renderReplacementFinder() {
+      const injured = getInjuredPlayer();
+      const reps = getReplacementRecommendations();
+      replacementList.innerHTML = "";
+      if (!reps.length) {
+        const div = document.createElement("div");
+        div.className = "replacement-item";
+        div.innerHTML = '<div class="muted">No replacement candidates remain after the current filter set.</div>';
+        replacementList.appendChild(div);
+        return;
+      }
+      reps.forEach((player, idx) => {
+        const div = document.createElement("div");
+        div.className = "replacement-item";
+        div.innerHTML = `
+          <div class="replacement-head">
+            <div>
+              <div class="name">#${idx + 1} ${player.name}</div>
+              
+            </div>
+            <div class="replacement-score">${player.matchRate}% match</div>
+          </div>
+          <div style="margin-top:8px;">
+            <span class="chip cluster-chip">${player.clusterName}</span>
+            <span class="chip">Age ${player.age}</span>
+            <span class="chip">AAV ${moneyFormat(player.contractAAV)}</span>
+            <span class="chip">WAR ${player.war.toFixed(1)}</span>
+            <span class="chip">Injuries ${player.injuries}</span>
+            <span class="chip">Total risk ${player.totalRiskPct}%</span>
+          </div>
+          <div class="small" style="margin-top:10px;">
+            Gap vs injured player: WAR ${player.warGap} · total risk ${player.riskGap} pts · injuries ${player.injuryGap} · cluster ${player.sameCluster ? "same" : "different"}
+          </div>
+        `;
+        replacementList.appendChild(div);
+      });
+    }
+
+    function updateSelectedPlayerFromInjured() {
+      selectedPlayer = getInjuredPlayer();
+    }
+
+    function render() {
+      updateSelectedPlayerFromInjured();
+      renderProfile();
+      renderReplacementFinder();
+    }
+
+    injuredPlayerSelect.addEventListener("change", render);
+    ageFilter.addEventListener("change", render);
+    warFilter.addEventListener("change", render);
+    clusterFilter.addEventListener("change", render);
+    injuryFilter.addEventListener("change", render);
+    riskFilter.addEventListener("change", render);
+
+    renderClusterNotes();
+    render();
+  </script>
+</body>
+</html>
