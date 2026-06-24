@@ -154,6 +154,8 @@ K-Means clustering on sprint speed and home-to-first time
 
 ## Interactive Web Tool
 
+![Website Preview](outputs/website_preview.png)
+
 `website/index.html` — open directly in a browser (no server required).
 
 The tool lets you select any shortstop and see their top replacement candidates ranked by spectral-embedding similarity and adjusted for injury/contract risk. Built with vanilla HTML/CSS/JS.
